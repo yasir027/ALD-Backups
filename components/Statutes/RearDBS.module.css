@@ -1,0 +1,55 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0px 20px 0px 20px;
+  margin-bottom: 10px;
+  font-size: 16px;
+  color: #000;
+  font-weight: 400;
+  margin-left:500px; /* Move it to the right */
+  margin-top: 50px; /* Bring it down a little */
+  background-color: transparent;
+  display: inline-block;
+  border: 1px solid #E34A3E;
+  border-top: none;
+  border-radius: 40px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  width: 237px; /* Specific width */
+  height: 30px; /* Specific height */
+}
+
+
+.content {
+  display: flex;
+  align-items: center;
+  justify-content:center;
+  gap:9px;
+  padding-bottom: 10px; /* Space above the line */
+  margin-right:7px;
+}
+
+.textButton {
+  background: none;
+  border: none;
+  color: inherit;
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 5px;
+  text-align: center;
+
+  &:hover {
+    text-decoration: underline; /* Subtle hover effect */
+  }
+}
+
+.divider {
+  color: #000;
+  font-size: 16px;
+}
+
+.rectangle {
+
+}

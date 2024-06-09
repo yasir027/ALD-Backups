@@ -1,0 +1,103 @@
+/* Styles for the subcontainer */
+.subcontainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  width: 275px;
+  margin-left: -29px;
+  max:100vh;
+}
+
+.subitem {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 38px;
+  font-weight: 600;
+  color: #B22525;
+  position: relative;
+  width: 70%;
+  height: 25px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+  margin-left: 25px;
+}
+
+/* Styles for the main container */
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: fixed;
+  width: 275px;
+  max-height:100vw;
+}
+
+.item {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 38px;
+  font-weight: 600;
+  color: #B22525;
+  position: relative;
+  width: 75%;
+  height: 25px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+  margin-left: 25px;
+}
+
+/* Styles for rectangles */
+.rectangle,
+.rectanglesubjectindex {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  border: 1px solid #000000;
+  z-index: 2;
+  border-bottom: none;
+  border-radius: 20px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.rectangle {
+  height: 100%;
+}
+
+.rectanglesubjectindex {
+  height: 170px;
+  margin-left: -3px;
+}
+
+/* Styles for search input */
+.searchInput {
+  position: absolute;
+  top: 0;
+  left: 4px;
+  width: 93%;
+  height: 93%;
+  border: 1px solid #000000;
+}
+
+/* Styles for sidebar */
+.sidebar {
+  background-color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 200px;
+  height: 550px;
+  border-radius: 0 20px 20px 0;
+  border-left: none;
+  border-right: 1px solid #e34a3e;
+  border-top: 1px solid #e34a3e;
+  border-bottom: 1px solid #e34a3e;
+  margin-left: 55px;
+}
