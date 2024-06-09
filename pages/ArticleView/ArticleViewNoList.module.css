@@ -1,0 +1,26 @@
+
+
+.AVNLcontainer{
+  display:flex;
+  justify-content:space-around;
+}
+.AVNLcol{
+  display:flex;
+  flex-direction:column;
+  justify-content: center;
+  align-items: center;
+
+}
+
+
+
+.AVNLbox{
+  background-color: black;
+  height: 79vh;
+  overflow-y: scroll;
+  border:2px solid #e24603;
+
+}
+ul{
+  list-style-type: none;
+}
