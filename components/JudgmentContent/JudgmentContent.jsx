@@ -39,9 +39,7 @@ const JudgmentContent = ({ judgmentData }) => {
     }
   };
 
-  //citationpara links
   const extractNumbersFromLink = (text) => {
-    // Match numbers from string
     const regex = /\d+/g;
     const matches = text.match(regex);
     return matches ? matches.map(Number) : [];
@@ -55,28 +53,20 @@ const JudgmentContent = ({ judgmentData }) => {
     ));
   };
 
-
-  //Longnotetextpara Links
   const extractAndRenderLongNoteLinks = (text) => {
-    const regex = /Para\s*(\d+)(?:\s+and\s+(\d+))?/g;
+    const regex = /(?:\[Para\s*(\d+(?:,\s*\d+)*?)\])|(?:Para\s*(\d+)(?:\s+and\s+(\d+))?)|(?:\(Para\s*(\d+)\s+and\s+Para\s*(\d+)\))/g;
     let match;
     const elements = [];
 
-    // Clone the string to prevent mutation
-    let textClone = text;
+    let lastIndex = 0;
 
-    // Find and replace "Para X" or "Para X and Y" with clickable links
-    while ((match = regex.exec(textClone)) !== null) {
-      const paraNos = match.slice(1).filter(Boolean); // Filter out undefined values
+    while ((match = regex.exec(text)) !== null) {
+      const paraNos = match[1] ? match[1].split(',').map((n) => n.trim()) :
+                     match[2] ? [match[2], match[3]].filter(Boolean) :
+                     match[4] ? [match[4], match[5]] : [];
 
-      // Split text based on the match
-      const beforeText = textClone.substring(0, match.index);
-      const afterText = textClone.substring(match.index + match[0].length);
+      elements.push(text.substring(lastIndex, match.index));
 
-      // Add text before the match
-      elements.push(beforeText);
-
-      // Add links for each paragraph number
       paraNos.forEach((paraNo, index) => {
         elements.push(
           <a
@@ -88,30 +78,25 @@ const JudgmentContent = ({ judgmentData }) => {
           </a>
         );
 
-        // Add "and" if it's the second number
         if (index === 0 && paraNos.length === 2) {
           elements.push(" and ");
         }
 
-        // Add comma if it's not the last number
-        if (index < paraNos.length - 1) {
+        if (index < paraNos.length - 1 && paraNos.length > 2) {
           elements.push(", ");
         }
       });
 
-      // Update textClone for the next iteration
-      textClone = afterText;
+      lastIndex = match.index + match[0].length;
     }
 
-    // Add remaining text after replacements
-    if (textClone) {
-      elements.push(textClone);
+    if (lastIndex < text.length) {
+      elements.push(text.substring(lastIndex));
     }
 
     return elements;
   };
 
-  // Effect to log current refs for debugging
   useEffect(() => {
     console.log('Current paragraph refs:', paraRefs.current);
   }, [judgmentData]);
@@ -126,13 +111,11 @@ const JudgmentContent = ({ judgmentData }) => {
             <br /><br />
             {judgmentData.judgmentJudges}
             <br /><br />
-
             {judgmentData.judgmentNo || judgmentData.judgmentDOJ ? (
               <>{judgmentData.judgmentNo || formatDate(judgmentData.judgmentDOJ)}</>
             ) : (
               <></>
             )}
-
             <br /><br />
             {judgmentData.judgmentNoText}
             <br /><br />
@@ -142,12 +125,11 @@ const JudgmentContent = ({ judgmentData }) => {
           ' '
         )}
       </h3>
-      {/* Short Notes */}
       <div>
         {judgmentData && judgmentData.ShortNotes && judgmentData.ShortNotes.length > 0 ? (
           judgmentData.ShortNotes.map((shortNote) => (
             <div key={shortNote.shortNoteId}>
-              <h4>{shortNote.shortNoteText}</h4>
+              <h4>{extractAndRenderLongNoteLinks(shortNote.shortNoteText)}</h4>
               {shortNote.LongNotes && shortNote.LongNotes.map((longNote) => (
                 <React.Fragment key={longNote.longNoteId}>
                   {renderLongNoteParas(longNote.LongNoteParas)}
@@ -159,16 +141,11 @@ const JudgmentContent = ({ judgmentData }) => {
           ''
         )}
       </div>
-
-      {/* Citations */}
       <div>
         {judgmentData && judgmentData.JudgmentTexts ? (
           judgmentData.JudgmentTexts.map((text) => (
             <div key={text.judgementTextId}>
-              {/* Display judgment text */}
               <p>{text.judgementTextParaText}</p>
-
-              {/* Display citations */}
               {text.judgmentsCiteds && text.judgmentsCiteds.length > 0 && (
                 <div style={{ textAlign: 'left' }}>
                   <h4>Cases Cited:</h4>
@@ -187,7 +164,7 @@ const JudgmentContent = ({ judgmentData }) => {
                                   href="#"
                                   onClick={() => scrollToPara(paraNo)}
                                 >
-                                  {`  Para  ${paraNo}`}
+                                  {` Para ${paraNo}`}
                                 </a>
                                 {idx < extractNumbersFromLink(citation.judgmentsCitedParaLink).length - 1 && ", "}
                               </React.Fragment>
@@ -205,8 +182,6 @@ const JudgmentContent = ({ judgmentData }) => {
           ' '
         )}
       </div>
-
-      {/* Judgment Texts */}
       <div>
         <h3> JUDGMENT</h3>
         {judgmentData && judgmentData.JudgmentTexts ? (
@@ -216,7 +191,7 @@ const JudgmentContent = ({ judgmentData }) => {
                 key={para.judgementTextParaId}
                 ref={(el) => paraRefs.current[para.judgementTextParaNo] = el}
               >
-                {para.judgementTextParaText}
+                <strong style={{ visibility: 'hidden' }}>{para.judgementTextParaNo}</strong> {para.judgementTextParaText}
               </p>
             ))
           )
