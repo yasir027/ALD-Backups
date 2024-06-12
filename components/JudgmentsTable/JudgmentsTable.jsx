@@ -4,11 +4,13 @@ import { Table } from 'reactstrap';
 import styles from './JudgmentsTable.module.css';
 
 const JudgmentsTable = ({ judgmentData, onRowClick, selectedRow }) => {
-    const [sortedData, setSortedData] = useState(judgmentData);
+    const [sortedData, setSortedData] = useState([]);
     const [sortDirection, setSortDirection] = useState('desc');
 
     useEffect(() => {
-        setSortedData(judgmentData);
+        // Sort the judgmentData by judgmentCitation in descending order by default
+        const sorted = [...judgmentData].sort((a, b) => b.judgmentCitation.localeCompare(a.judgmentCitation));
+        setSortedData(sorted);
     }, [judgmentData]);
 
     const handleSort = () => {
@@ -32,7 +34,7 @@ const JudgmentsTable = ({ judgmentData, onRowClick, selectedRow }) => {
         return `${day}/${month}/${year}`;
     };
 
-    const handleRowClick = (judgment, index) => {
+    const handleRowClick = (judgment) => {
         onRowClick(judgment); // Notify parent component with selected judgment
         window.scrollTo({
             top: 120,
