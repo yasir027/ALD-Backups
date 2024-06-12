@@ -21,6 +21,7 @@ const IndexPage = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [selectedRow, setSelectedRow] = useState(null); // State to track the selected row
   const [showPageUpButton, setShowPageUpButton] = useState(false); // State to show page up button
+  const [searchTerms, setSearchTerms] = useState([]); // Add this line
   const contentRef = useRef();
 
   // Adding state for results, error, and judgment count
@@ -69,13 +70,29 @@ const IndexPage = () => {
     handleSearchById(data.judgmentId);
   };
 
+  const scrollToTop = () => {
+    if (contentRef.current) {
+      contentRef.current.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    }
+  };
+
   useEffect(() => {
-    // Set selected row to the first row only when results are loaded initially
+    // Set selected row to the first row when results are loaded
     if (results.length > 0 && !selectedRow) {
       setSelectedRow(results[0]);
       handleRowClick(results[0]); // Simulate click on the first row to load its content
     }
   }, [results, selectedRow]);
+
+  useEffect(() => {
+    // Scroll to top whenever judgmentData changes
+    if (judgmentData) {
+      scrollToTop();
+    }
+  }, [judgmentData]);
 
   const handleZoom = (type) => {
     setFontSize((prev) => (type === "plus" ? prev + 2 : prev - 2));
@@ -95,7 +112,7 @@ const IndexPage = () => {
 
   const handleResultClick = (id) => {
     setJudgmentId(id);
-    handleSearchById();
+    handleSearchById(id); // Pass the id parameter here
   };
 
   const handleSaveToPad = () => {
@@ -122,11 +139,15 @@ const IndexPage = () => {
     };
 
     // Attach scroll event listener to contentRef
-    contentRef.current.addEventListener("scroll", handleScroll);
+    if (contentRef.current) {
+      contentRef.current.addEventListener("scroll", handleScroll);
+    }
 
     // Clean up function to remove event listener
     return () => {
-      contentRef.current.removeEventListener("scroll", handleScroll);
+      if (contentRef.current) {
+        contentRef.current.removeEventListener("scroll", handleScroll);
+      }
     };
   }, []); // Empty dependency array ensures this effect runs only once
 
@@ -163,9 +184,9 @@ const IndexPage = () => {
       )}
 
       <div className={styles.sideNscroll}>
-        <SidePanel setResults={setResults} setJudgmentCount={setJudgmentCount} setError={setError} />
+        <SidePanel setResults={setResults} setJudgmentCount={setJudgmentCount} setError={setError} setSearchTerms={setSearchTerms} />
         <div className={styles.scrollableText} ref={contentRef} style={{ fontSize: `${fontSize}px` }}>
-          {activeContent === "judgment" && <JudgmentContent judgmentData={judgmentData} />}
+          {activeContent === "judgment" && <JudgmentContent judgmentData={judgmentData} searchTerms={searchTerms} />}
           {activeContent === "headnotes" && <HeadnotesContent judgmentData={judgmentData} />}
           {activeContent === "status" && <StatusContent judgmentData={judgmentData} />}
           {activeContent === "equals" && <EqualsContent judgmentData={judgmentData} />}
@@ -185,4 +206,3 @@ const IndexPage = () => {
 };
 
 export default IndexPage;
-
