@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from "react";
 import styles from "./JudgmentContent.module.css";
 
-const JudgmentContent = ({ judgmentData }) => {
+const JudgmentContent = ({ judgmentData, searchTerms }) => {
   const paraRefs = useRef({});
 
   const formatDate = (dateString) => {
@@ -45,10 +45,18 @@ const JudgmentContent = ({ judgmentData }) => {
     return matches ? matches.map(Number) : [];
   };
 
-  const renderLongNoteParas = (longNoteParas) => {
+  const renderLongNoteParas = (longNoteParas, searchTerms) => {
     return longNoteParas.map((longNotePara) => (
       <p key={longNotePara.longNoteParaId}>
-        {extractAndRenderLongNoteLinks(longNotePara.longNoteParaText)}
+        {extractAndRenderLongNoteLinks(longNotePara.longNoteParaText).map((element, index) =>
+          React.isValidElement(element) ? (
+            <React.Fragment key={index}>
+              {element}
+            </React.Fragment>
+          ) : (
+            <span key={index}>{highlightText(element, searchTerms)}</span>
+          )
+        )}
       </p>
     ));
   };
@@ -97,6 +105,19 @@ const JudgmentContent = ({ judgmentData }) => {
     return elements;
   };
 
+  const highlightText = (text, searchTerms) => {
+    if (!text || !searchTerms.length) return text;
+
+    const regexPattern = searchTerms.map(term => term.replace(/[()]/g, '\\$&')).join('|');
+    const regex = new RegExp(`(${regexPattern})`, 'gi');
+
+    const parts = text.split(regex);
+
+    return parts.map((part, index) =>
+      regex.test(part) ? <mark key={index}>{part}</mark> : part
+    );
+  };
+
   useEffect(() => {
     console.log('Current paragraph refs:', paraRefs.current);
   }, [judgmentData]);
@@ -106,10 +127,10 @@ const JudgmentContent = ({ judgmentData }) => {
       <h3 className={styles.centered}>
         {judgmentData ? (
           <>
-            {judgmentData.judgmentCitation}<br />
-            {judgmentData.judgmentCourtText}
+            {highlightText(judgmentData.judgmentCitation, searchTerms)}<br />
+            {highlightText(judgmentData.judgmentCourtText, searchTerms)}
             <br /><br />
-            {judgmentData.judgmentJudges}
+            {highlightText(judgmentData.judgmentJudges, searchTerms)}
             <br /><br />
             {judgmentData.judgmentNo || judgmentData.judgmentDOJ ? (
               <>{judgmentData.judgmentNo || formatDate(judgmentData.judgmentDOJ)}</>
@@ -117,9 +138,9 @@ const JudgmentContent = ({ judgmentData }) => {
               <></>
             )}
             <br /><br />
-            {judgmentData.judgmentNoText}
+            {highlightText(judgmentData.judgmentNoText, searchTerms)}
             <br /><br />
-            {judgmentData.judgmentParties}
+            {highlightText(judgmentData.judgmentParties, searchTerms)}
           </>
         ) : (
           ' '
@@ -129,10 +150,18 @@ const JudgmentContent = ({ judgmentData }) => {
         {judgmentData && judgmentData.ShortNotes && judgmentData.ShortNotes.length > 0 ? (
           judgmentData.ShortNotes.map((shortNote) => (
             <div key={shortNote.shortNoteId}>
-              <h4>{extractAndRenderLongNoteLinks(shortNote.shortNoteText)}</h4>
+              <h4>{extractAndRenderLongNoteLinks(shortNote.shortNoteText).map((element, index) => (
+                React.isValidElement(element) ? (
+                  <React.Fragment key={index}>
+                    {element}
+                  </React.Fragment>
+                ) : (
+                  <span key={index}>{highlightText(element, searchTerms)}</span>
+                )
+              ))}</h4>
               {shortNote.LongNotes && shortNote.LongNotes.map((longNote) => (
                 <React.Fragment key={longNote.longNoteId}>
-                  {renderLongNoteParas(longNote.LongNoteParas)}
+                  {renderLongNoteParas(longNote.LongNoteParas, searchTerms)}
                 </React.Fragment>
               ))}
             </div>
@@ -145,17 +174,17 @@ const JudgmentContent = ({ judgmentData }) => {
         {judgmentData && judgmentData.JudgmentTexts ? (
           judgmentData.JudgmentTexts.map((text) => (
             <div key={text.judgementTextId}>
-              <p>{text.judgementTextParaText}</p>
+              <p>{highlightText(text.judgementTextParaText, searchTerms)}</p>
               {text.judgmentsCiteds && text.judgmentsCiteds.length > 0 && (
                 <div style={{ textAlign: 'left' }}>
                   <h4>Cases Cited:</h4>
                   <ul style={{ listStyleType: 'none', paddingLeft: 0 }}>
                     {text.judgmentsCiteds.map((citation, index) => (
                       <li key={index}>
-                        {citation.judgmentsCitedParties}
-                        {citation.judgmentsCitedEqualCitation}
+                        {highlightText(citation.judgmentsCitedParties, searchTerms)}
+                        {highlightText(citation.judgmentsCitedEqualCitation, searchTerms)}
                         {citation.judgmentsCitedReferredCitation &&
-                          ` = ${citation.judgmentsCitedReferredCitation}`}
+                          ` = ${highlightText(citation.judgmentsCitedReferredCitation, searchTerms)}`}
                         {citation.judgmentsCitedParaLink && (
                           <>
                             {extractNumbersFromLink(citation.judgmentsCitedParaLink).map((paraNo, idx) => (
@@ -191,7 +220,7 @@ const JudgmentContent = ({ judgmentData }) => {
                 key={para.judgementTextParaId}
                 ref={(el) => paraRefs.current[para.judgementTextParaNo] = el}
               >
-                <strong style={{ visibility: 'hidden' }}>{para.judgementTextParaNo}</strong> {para.judgementTextParaText}
+                <strong style={{ visibility: 'hidden' }}>{para.judgementTextParaNo}</strong> {highlightText(para.judgementTextParaText, searchTerms)}
               </p>
             ))
           )
