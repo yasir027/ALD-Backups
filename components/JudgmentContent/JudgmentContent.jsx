@@ -33,7 +33,7 @@ const JudgmentContent = ({ judgmentData, searchTerms }) => {
         setTimeout(() => {
           paraElement.classList.remove(styles.pop);
         }, 1000);
-      }, 0); // Ensure the scrollIntoView is in the next event loop tick
+      }, 0);
     } else {
       console.warn(`Paragraph number ${paraNo} not found in references.`);
     }
@@ -59,7 +59,7 @@ const JudgmentContent = ({ judgmentData, searchTerms }) => {
         )}
       </p>
     ));
-  };
+  };  
 
   const extractAndRenderLongNoteLinks = (text) => {
     const regex = /(?:\[Para\s*(\d+(?:,\s*\d+)*?)\])|(?:Para\s*(\d+)(?:\s+and\s+(\d+))?)|(?:\(Para\s*(\d+)\s+and\s+Para\s*(\d+)\))/g;
@@ -181,10 +181,10 @@ const JudgmentContent = ({ judgmentData, searchTerms }) => {
                   <ul style={{ listStyleType: 'none', paddingLeft: 0 }}>
                     {text.judgmentsCiteds.map((citation, index) => (
                       <li key={index}>
-                        {highlightText(citation.judgmentsCitedParties, searchTerms)}
-                        {highlightText(citation.judgmentsCitedEqualCitation, searchTerms)}
-                        {citation.judgmentsCitedReferredCitation &&
-                          ` = ${highlightText(citation.judgmentsCitedReferredCitation, searchTerms)}`}
+                      {highlightText(citation.judgmentsCitedParties, searchTerms)}
+                      {highlightText(citation.judgmentsCitedEqualCitation, searchTerms)}
+                      {citation.judgmentsCitedRefferedCitation &&
+                        ` = ${highlightText(citation.judgmentsCitedRefferedCitation, searchTerms)}`}
                         {citation.judgmentsCitedParaLink && (
                           <>
                             {extractNumbersFromLink(citation.judgmentsCitedParaLink).map((paraNo, idx) => (
