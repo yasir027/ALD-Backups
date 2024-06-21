@@ -17,7 +17,6 @@ const sequelize = new Sequelize('ald_db', 'root', 'yasirsql27', {
   dialect: 'mysql',
 });
 
-//affan
 import mysql from 'mysql2/promise';
 const pool = mysql.createPool({
   connectionLimit: 10,
@@ -364,6 +363,7 @@ app.get('/api/search', async (req, res) => {
 });
 
 //affan
+//fetching corresponding judgment data with legislation(SECTION)
 export async function getSearchResults(legislationName, section, subsection) {
   let connection;
   try {
@@ -939,49 +939,61 @@ app.get('/api/searchByEquivalent', async (req, res) => {
   }
 });
 
-export async function getSearchByEquivalent(year, volume, publicationName, pageNo) {
+export async function getSearchByEquivalent(year, volume, publicationName, pageNo, freeText) {
   let connection;
   try {
-      connection = await pool.getConnection();
-      let query = `
-          SELECT 
-          j.*,
-              j.judgmentId,
-              j.judgmentCitation
-          FROM 
-              judgment j
-          INNER JOIN 
-              judgmentsCited e ON j.judgmentId = e.judgmentId
-          WHERE 
-              1=1
-      `;
+    connection = await pool.getConnection();
+    let query = `
+      SELECT 
+        j.*,
+        j.judgmentId,
+        j.judgmentCitation,
+         ct.citationCourtName,
+         c.courtName
+      FROM 
+        judgment j
+      INNER JOIN 
+        equalcitation e ON j.judgmentId = e.judgmentId
+         left join
+              citation ct on j.judgmentid= ct.judgmentid
+              left join 
+              court c on j.courtId = c.courtId
+      WHERE 
+        1=1
+    `;
 
-      if (year) {
-          query += ` AND e.judgmentsCitedEqualCitation LIKE '${year}%'`;
+    if (year) {
+      query += ` AND e.equalCitationText LIKE '${year}%'`;
+    }
+    if (volume) {
+      query += ` AND e.equalCitationText LIKE '%${volume}%'`;
+    }
+    if (publicationName && publicationName !== 'ALL') {
+      // Adjust the query to handle the formatted publicationName if needed
+      if (publicationName.startsWith('AIR') && publicationName.includes(' ')) {
+        query += ` AND e.equalCitationText LIKE '%${publicationName}%'`;
+      } else {
+        query += ` AND e.equalCitationText LIKE '%${publicationName}%'`;
       }
-      if (volume) {
-          query += ` AND e.judgmentsCitedEqualCitation LIKE '%${volume}%'`;
-      }
-      if (publicationName && publicationName !== 'ALL') {
-          query += ` AND e.judgmentsCitedEqualCitation LIKE '%${publicationName}%'`;
-      }
-      if (pageNo) {
-          query += ` AND e.judgmentsCitedEqualCitation LIKE '%${pageNo}%'`;
-      }
+    }
+    if (pageNo) {
+      query += ` AND e.equalCitationText LIKE '%${pageNo}'`;
+    }
+    if (freeText) {
+      query += ` AND e.equalCitationText LIKE '%${freeText}%'`;
+    }
 
-      const [rows] = await connection.execute(query);
-      return rows;
+    const [rows] = await connection.execute(query);
+    return rows;
   } catch (error) {
-      console.error('Error executing query:', error);
-      throw error;
+    console.error('Error executing query:', error);
+    throw error;
   } finally {
-      if (connection) {
-          connection.release();
-      }
+    if (connection) {
+      connection.release();
+    }
   }
 }
-
-
 
 //ADVANCE SEARCH PAGE
 app.get('/api/searchAdvanced', async (req, res) => {
@@ -1169,7 +1181,7 @@ export async function getJudgmentsByMultipleCriteria(actKeywords, sectionKeyword
 
 
 
-
+//Drop Downs
 //list acts
 async function getLegislationNames() {
   let connection;
@@ -1216,7 +1228,7 @@ app.get('/api/all-legislation', async (req, res) => {
   }
 });
 
-// fetch sections based on prefix and number
+// fetch sections based on prefix and number DropDown
 app.get('/api/sections', async (req, res) => {
   try {
     const { legislationId } = req.query;
@@ -1240,7 +1252,7 @@ app.get('/api/sections', async (req, res) => {
 
 
 
-//fetch sub sections
+//fetch sub sections DropDown
 app.get('/api/subsections', async (req, res) => {
   try {
     const { legislationSectionId } = req.query;
@@ -1262,8 +1274,140 @@ app.get('/api/subsections', async (req, res) => {
 });
 
 
+//fetch topics DropDown
+
+app.get('/api/all-topic', async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+    topicId,
+    topicName
+FROM 
+    topic
+ORDER BY 
+    topicName ASC;
 
 
+    `;
+    const [rows] = await pool.query(query);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching all topics:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+//fetch Advocates DropDown
+
+app.get('/api/all-advocate', async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+      advocateId,
+    advocateName
+FROM 
+    advocate
+ORDER BY 
+    advocateName ASC;
+
+
+    `;
+    const [rows] = await pool.query(query);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching all topics:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+//fetch Judges DropDown
+app.get('/api/all-judge', async (req, res) => {
+  try {
+    const query = `
+      SELECT
+      judgeId, 
+   judgeName
+FROM 
+    judge
+ORDER BY 
+    judgeName ASC;
+
+
+    `;
+    const [rows] = await pool.query(query);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching all topics:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+//fetch Nominal DropDown
+
+app.get('/api/all-nominal', async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+    distinct judgmentId, judgmentParties
+FROM 
+     judgment
+ORDER BY 
+    judgmentParties ASC;
+
+
+    `;
+    const [rows] = await pool.query(query);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching all topics:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+//fetch CaseNo DropDown
+app.get('/api/all-caseno', async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+     judgmentId, judgmentNoText
+FROM 
+     judgment
+ORDER BY 
+    judgmentNoText ASC;
+
+
+    `;
+    const [rows] = await pool.query(query);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching all caseno:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Fetch all words from the 'words' table
+
+app.get('/api/all-words', async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        word
+      FROM 
+        words
+      ORDER BY 
+        word ASC;
+    `;
+    const [rows] = await pool.query(query);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching all words:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+//Statutes
 // Route for searching statutes (bareacts)
 app.get("/api/search-bareacts", async (req, res) => {
   const { bareActId, bareActName, sectionPrefix, sectionNo, notificationName } =
