@@ -255,6 +255,29 @@ const EqualCitation = sequelize.define('EqualCitation', {
     tableName: 'equalcitation',
     timestamps: false,
   });
+  const PublicationYear = sequelize.define('publicationyear', {
+    publicationYearId: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
+    publicationId: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    publicationYearNo: {
+      type: DataTypes.STRING(20),
+      allowNull: false
+    }
+  }, {
+    // Additional model options
+    tableName: 'publicationyear', // Set the table name explicitly
+    timestamps: false // Disable timestamps
+  });
+
+
+
+
 
 // Define associations
 Judgment.hasMany(JudgmentText, { foreignKey: 'judgmentId' });
@@ -272,6 +295,9 @@ ShortNote.belongsTo(Judgment, { foreignKey: 'judgmentId' });
 
 Judgment.hasMany(JudgmentTopics, { foreignKey: 'judgmentId' });
 JudgmentTopics.belongsTo(Judgment, { foreignKey: 'judgmentId' });
+
+Judgment.hasMany(Court, { foreignKey: 'judgmentId' });
+Court.belongsTo(Judgment, { foreignKey: 'judgmentId' });
 
 Judgment.hasMany(JudgmentStatus, { foreignKey: 'judgmentId' });
 JudgmentStatus.belongsTo(Judgment, { foreignKey: 'judgmentId' });
@@ -313,6 +339,10 @@ Court.belongsTo(CourtType, { foreignKey: 'courtTypeId' });
 //Equals
 Judgment.hasMany(EqualCitation, { foreignKey: 'judgmentId' });
 EqualCitation.belongsTo(Judgment, { foreignKey: 'judgmentId' });
+
+
+Citation.belongsTo(PublicationYear, { foreignKey: 'publicationYearId' });
+PublicationYear.hasMany(Citation, { foreignKey: 'publicationYearId' });
 
 // API endpoint for shortnote search
 app.post('/judgments/search', async (req, res) => {
@@ -381,9 +411,12 @@ export async function getSearchResults(legislationName, section, subsection) {
               CONCAT(ls.legislationSectionPrefix, ' ', ls.legislationSectionNo) AS legislationSectionCombined,
               ls.legislationSectionName,
               lss.legislationSubSectionId,
-              lss.legislationSubSectionName
+              lss.legislationSubSectionName,
+              c.courtName
           FROM 
               judgment j
+            left join 
+              court c on j.courtId = c.courtId
           LEFT JOIN 
               shortnote sn ON j.judgmentId = sn.judgmentId
           LEFT JOIN 
@@ -402,6 +435,8 @@ export async function getSearchResults(legislationName, section, subsection) {
               (? IS NULL OR l.legislationName LIKE ?)
               AND (? IS NULL OR CONCAT(ls.legislationSectionPrefix, ' ', ls.legislationSectionNo) LIKE ?)
               AND (? IS NULL OR lss.legislationSubSectionName LIKE ?)
+            ORDER BY 
+              j.judgmentCitation DESC
       `;
 
       const queryParams = [
@@ -517,15 +552,21 @@ export async function getJudgmentsByTopic(topic) {
             SELECT 
             j.*,
                 j.judgmentId,
-                j.judgmentCitation
+                j.judgmentCitation,
+                c.courtName
             FROM 
                 judgment j
+            left join 
+              court c on j.courtId = c.courtId
+            
             INNER JOIN 
                 judgmenttopics jt ON j.judgmentId = jt.judgmentId
             INNER JOIN 
                 topic t ON jt.topicId = t.topicId
             WHERE 
                 t.topicName LIKE ?
+            ORDER BY 
+              j.judgmentCitation DESC
         `;
 
         const queryParams = [`%${topic}%`];
@@ -541,6 +582,57 @@ export async function getJudgmentsByTopic(topic) {
         }
     }
 }
+
+app.get('/api/searchByCaseNo', async (req, res) => {
+    const { caseinfo } = req.query;
+    if (!caseinfo) {
+        return res.status(400).json({ error: 'caseinfo is required' });
+    }
+    try {
+        const results = await getSearchByCaseNo(caseinfo);
+        res.json(results);
+    } catch (error) {
+        console.error('Error searching by nominal:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  export async function getSearchByCaseNo(caseinfo) {
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const query = `
+            SELECT 
+            j.*,
+                j.judgmentId,
+                j.judgmentNoText,
+                j.judgmentCitation,
+                j.judgmentParties,
+                 ct.citationCourtName,
+                 c.courtName
+            FROM 
+                judgment j
+            left join 
+              court c on j.courtId = c.courtId
+                 left join
+              citation ct on j.judgmentid= ct.judgmentid
+              
+            WHERE 
+                j.judgmentNoText LIKE ?
+            ORDER BY 
+              j.judgmentCitation DESC
+        `;
+        const queryParams = [`%${caseinfo}%`];
+        const [rows] = await connection.execute(query, queryParams);
+        return rows;
+    } catch (error) {
+        console.error('Error executing query:', error);
+        throw error;
+    } finally {
+        if (connection) {
+            connection.release();
+        }
+    }
+  }
 
 
 //Articles
@@ -664,59 +756,7 @@ app.get('/searchJudges', async (req, res) => {
 
 
 
-app.get('/api/searchByCitation', async (req, res) => {
-    const { year, volume, publicationName, pageNo } = req.query;
-
-    try {
-        const results = await getSearchByCitation(year, volume, publicationName, pageNo);
-        res.json(results);
-    } catch (error) {
-        console.error('Error fetching search results:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
-});
-
-export async function getSearchByCitation(year, volume, publicationName, pageNo) {
-    let connection;
-    try {
-        connection = await pool.getConnection();
-        const query = `
-            SELECT 
-            *,
-                c.judgmentId,
-                c.citationText
-            FROM 
-                citation c
-            INNER JOIN 
-                publicationyear py ON c.publicationYearId = py.publicationYearId
-            INNER JOIN 
-                publication p ON py.publicationId = p.publicationId
-            WHERE 
-                (? IS NULL OR py.publicationYearNo = ?)
-                AND (? IS NULL OR c.publicationVolume = ?)
-                AND (? IS NULL OR p.publicationName = ?)
-                AND (? IS NULL OR c.citationPageNo = ?)
-        `;
-
-        const queryParams = [
-            year || null, year || null,
-            volume || null, volume || null,
-            publicationName !== 'ALL' ? publicationName : null, publicationName !== 'ALL' ? publicationName : null,
-            pageNo || null, pageNo || null
-        ];
-
-        const [rows] = await connection.execute(query, queryParams);
-        return rows;
-    } catch (error) {
-        console.error('Error executing query:', error);
-        throw error;
-    } finally {
-        if (connection) {
-            connection.release();
-        }
-    }
-}
-
+//NOminal index
 app.get('/api/searchByNominal', async (req, res) => {
     const { nominal } = req.query;
 
@@ -741,11 +781,16 @@ export async function getSearchByNominal(nominal) {
             j.*,
                 j.judgmentId,
                 j.judgmentCitation,
-                j.judgmentParties
+                j.judgmentParties,
+            c.courtName
             FROM 
                 judgment j
+            left join 
+              court c on j.courtId = c.courtId
             WHERE 
                 j.judgmentParties LIKE ?
+              ORDER BY 
+              j.judgmentCitation DESC
         `;
 
         const queryParams = [`%${nominal}%`];
@@ -761,6 +806,7 @@ export async function getSearchByNominal(nominal) {
         }
     }
 }
+
 
 
 app.get('/api/searchByCaseno', async (req, res) => {
@@ -791,14 +837,19 @@ export async function getSearchByCaseno(caseType, caseNo, caseYear) {
                 j.judgmentCitation,
                 jc.judgmentCaseNo,
                 jc.judgmentCaseYear
+             c.courtName
             FROM 
                 judgment j
+            left join 
+              court c on j.courtId = c.courtId
             INNER JOIN 
                 judgmentcasenos jc ON j.judgmentId = jc.judgmentId
             WHERE 
                 (? IS NULL OR jc.judgmentCaseNo LIKE ?)
                 AND (? IS NULL OR jc.judgmentCaseNo LIKE ?)
                 AND (? IS NULL OR jc.judgmentCaseYear LIKE ?)
+                ORDER BY 
+              j.judgmentCitation DESC
         `;
 
         const queryParams = [
@@ -859,6 +910,8 @@ export async function getSearchByJudge(judge) {
               court c on j.courtId = c.courtId
             WHERE 
                 ju.judgeName LIKE ?
+            ORDER BY 
+              j.judgmentCitation DESC
         `;
 
         const queryParams = [`%${judge}%`];
@@ -901,15 +954,20 @@ export async function getSearchByAdvocate(advocateName) {
               j.judgmentId,
               j.judgmentCitation,
               j.judgmentParties,
-              a.advocateName
-          FROM 
-              judgment j
+              a.advocateName,
+           c.courtName
+            FROM 
+                judgment j
+            left join 
+              court c on j.courtId = c.courtId
           INNER JOIN 
               judgmentadvocates ja ON j.judgmentId = ja.judgmentId
           INNER JOIN 
               advocate a ON ja.advocateId = a.advocateId
           WHERE 
               a.advocateName LIKE ?
+            ORDER BY 
+              j.judgmentCitation DESC
       `;
 
       const queryParams = [`%${advocateName}%`];
@@ -926,72 +984,105 @@ export async function getSearchByAdvocate(advocateName) {
   }
 }
 
-//Equivalent Index
-app.get('/api/searchByEquivalent', async (req, res) => {
-  const { year, volume, publicationName, pageNo } = req.query;
-
-  try {
-      const results = await getSearchByEquivalent(year, volume, publicationName, pageNo);
-      res.json(results);
-  } catch (error) {
-      console.error('Error fetching search results:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
-  }
-});
-
-export async function getSearchByEquivalent(year, volume, publicationName, pageNo, freeText) {
-  let connection;
-  try {
-    connection = await pool.getConnection();
-    let query = `
-      SELECT 
-        j.*,
-        j.judgmentId,
-        j.judgmentCitation,
-         ct.citationCourtName,
-         c.courtName
-      FROM 
-        judgment j
-      INNER JOIN 
-        equalcitation e ON j.judgmentId = e.judgmentId
-         left join
+//citation index
+app.get('/api/searchByCitation', async (req, res) => {
+    const { CitationText } = req.query;
+    if (!CitationText) {
+        return res.status(400).json({ error: 'citation is required' });
+    }
+    try {
+        const results = await getSearchByCitation(CitationText);
+        res.json(results);
+    } catch (error) {
+        console.error('Error searching by Citation:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  export async function getSearchByCitation(CitationText) {
+    let connection;
+    try {
+        connection = await pool.getConnection();
+        const query = `
+            SELECT 
+            j.*,
+                j.judgmentId,
+                j.judgmentNoText,
+                j.judgmentCitation,
+                j.judgmentParties,
+                 ct.citationCourtName,
+                 c.courtName
+            FROM 
+                judgment j
+                 left join
               citation ct on j.judgmentid= ct.judgmentid
               left join 
               court c on j.courtId = c.courtId
-      WHERE 
-        1=1
-    `;
+            WHERE 
+                j.judgmentCitation LIKE ?
+            ORDER BY 
+              j.judgmentCitation DESC
+        `;
+        const queryParams = [`${CitationText}`];
+        const [rows] = await connection.execute(query, queryParams);
+        return rows;
+    } catch (error) {
+        console.error('Error executing query:', error);
+        throw error;
+    } finally {
+        if (connection) {
+            connection.release();
+        }
+    }
+  }
 
-    if (year) {
-      query += ` AND e.equalCitationText LIKE '${year}%'`;
-    }
-    if (volume) {
-      query += ` AND e.equalCitationText LIKE '%${volume}%'`;
-    }
-    if (publicationName && publicationName !== 'ALL') {
-      // Adjust the query to handle the formatted publicationName if needed
-      if (publicationName.startsWith('AIR') && publicationName.includes(' ')) {
-        query += ` AND e.equalCitationText LIKE '%${publicationName}%'`;
-      } else {
-        query += ` AND e.equalCitationText LIKE '%${publicationName}%'`;
-      }
-    }
-    if (pageNo) {
-      query += ` AND e.equalCitationText LIKE '%${pageNo}'`;
-    }
-    if (freeText) {
-      query += ` AND e.equalCitationText LIKE '%${freeText}%'`;
-    }
+//Equivalent Index
 
-    const [rows] = await connection.execute(query);
-    return rows;
+app.get('/api/searchByEquivalent', async (req, res) => {
+  const { EqualText } = req.query;
+  if (!EqualText) {
+      return res.status(400).json({ error: 'EqualText is required' });
+  }
+  try {
+      const results = await getSearchByEquivalent(EqualText);
+      res.json(results);
   } catch (error) {
-    console.error('Error executing query:', error);
-    throw error;
+      console.error('Error searching by Equal:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+export async function getSearchByEquivalent(EqualText) {
+  let connection;
+  try {
+      connection = await pool.getConnection();
+      const query = `
+          SELECT 
+          j.*,
+              j.judgmentId,
+              j.judgmentNoText,
+              j.judgmentCitation,
+              j.judgmentParties,
+               c.courtName
+          FROM 
+              judgment j
+               left join
+             equalcitation e on j.judgmentid= e.judgmentid
+            left join 
+            court c on j.courtId = c.courtId
+          WHERE 
+              e.equalCitationText LIKE ?
+          ORDER BY 
+              j.judgmentCitation DESC
+      `;
+      const queryParams = [`${EqualText}`];
+      const [rows] = await connection.execute(query, queryParams);
+      return rows;
+  } catch (error) {
+      console.error('Error executing query:', error);
+      throw error;
   } finally {
-    if (connection) {
-      connection.release();
-    }
+      if (connection) {
+          connection.release();
+      }
   }
 }
 
@@ -1038,6 +1129,8 @@ app.get('/api/searchAdvanced', async (req, res) => {
   }
 });
 
+
+//here
 export async function getJudgmentsByMultipleCriteria(actKeywords, sectionKeywords, subsectionKeywords, topicKeywords, judgeKeywords, advocateKeywords) {
   let connection;
   try {
@@ -1048,22 +1141,25 @@ export async function getJudgmentsByMultipleCriteria(actKeywords, sectionKeyword
               j.judgmentId,
               j.judgmentCitation,
               j.judgmentParties,
-              a.advocateName
+              a.advocateName,
+              j.judgmentDOJ,
+              c.courtName
           FROM 
               judgment j
-          LEFT JOIN shortnote sn ON j.judgmentId = sn.judgmentId
-          LEFT JOIN shortnoteleg snl ON sn.shortNoteId = snl.shortNoteId
-          LEFT JOIN legislation l ON snl.legislationId = l.legislationId
-          LEFT JOIN shortnotelegsec snls ON sn.shortNoteId = snls.shortNoteId
-          LEFT JOIN legislationsection ls ON snls.legislationSectionId = ls.legislationSectionId
-          LEFT JOIN shortnotelegsubsec snlss ON sn.shortNoteId = snlss.shortNoteId
-          LEFT JOIN legislationsubsection lss ON snlss.legislationSubSectionId = lss.legislationSubSectionId
-          INNER JOIN judgmenttopics jt ON j.judgmentId = jt.judgmentId
-          INNER JOIN topic t ON jt.topicId = t.topicId
-          INNER JOIN judgmentjudges jj ON j.judgmentId = jj.judgmentId
-          INNER JOIN judge ju ON jj.judgeId = ju.judgeId
-          INNER JOIN judgmentadvocates ja ON j.judgmentId = ja.judgmentId
-          INNER JOIN advocate a ON ja.advocateId = a.advocateId
+              LEFT JOIN court c ON j.courtId = c.courtId
+              LEFT JOIN shortnote sn ON j.judgmentId = sn.judgmentId
+              LEFT JOIN shortnoteleg snl ON sn.shortNoteId = snl.shortNoteId
+              LEFT JOIN legislation l ON snl.legislationId = l.legislationId
+              LEFT JOIN shortnotelegsec snls ON sn.shortNoteId = snls.shortNoteId
+              LEFT JOIN legislationsection ls ON snls.legislationSectionId = ls.legislationSectionId
+              LEFT JOIN shortnotelegsubsec snlss ON sn.shortNoteId = snlss.shortNoteId
+              LEFT JOIN legislationsubsection lss ON snlss.legislationSubSectionId = lss.legislationSubSectionId
+              LEFT JOIN judgmenttopics jt ON j.judgmentId = jt.judgmentId
+              LEFT JOIN topic t ON jt.topicId = t.topicId
+              LEFT JOIN judgmentjudges jj ON j.judgmentId = jj.judgmentId
+              LEFT JOIN judge ju ON jj.judgeId = ju.judgeId
+              LEFT JOIN judgmentadvocates ja ON j.judgmentId = ja.judgmentId
+              LEFT JOIN advocate a ON ja.advocateId = a.advocateId
           WHERE 
       `;
 
@@ -1158,6 +1254,11 @@ export async function getJudgmentsByMultipleCriteria(actKeywords, sectionKeyword
 
       query += conditions.join(' AND ');
 
+      query += `
+            ORDER BY 
+                j.judgmentCitation DESC
+        `;
+
       const queryParams = [
           ...actKeywords.map(kw => `%${kw}%`),
           ...sectionKeywords.map(kw => `%${kw}%`),
@@ -1178,6 +1279,9 @@ export async function getJudgmentsByMultipleCriteria(actKeywords, sectionKeyword
       }
   }
 }
+//there
+
+
 
 
 
@@ -1602,6 +1706,78 @@ app.get("/api/all-bareacts", async (req, res) => {
   }
 });
 
+// fetch all courts
+app.get('/api/all-courts', async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+     *
+FROM 
+    court
+ORDER BY 
+    courtName ASC;
+    `;
+    const [rows] = await pool.query(query);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching all courts:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+//fetch list of case no citation equals
+app.get('/api/all-caseno', async (req, res) => {
+    try {
+      const query = `
+        SELECT 
+       judgmentId, judgmentNoText
+  FROM 
+       judgment
+  ORDER BY 
+      judgmentNoText ASC;
+      `;
+      const [rows] = await pool.query(query);
+      res.json(rows);
+    } catch (error) {
+      console.error('Error fetching all caseno:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  
+  app.get('/api/all-citation', async (req, res) => {
+    try {
+      const query = `
+        SELECT 
+       judgmentId, judgmentCitation
+  FROM 
+       judgment
+  ORDER BY 
+      judgmentCitation ASC;
+      `;
+      const [rows] = await pool.query(query);
+      res.json(rows);
+    } catch (error) {
+      console.error('Error fetching all caseno:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  
+  app.get('/api/all-equivalent', async (req, res) => {
+    try {
+      const query = `
+        SELECT 
+      *
+  FROM 
+       equalcitation
+  ORDER BY 
+      judgmentId ASC;
+      `;
+      const [rows] = await pool.query(query);
+      res.json(rows);
+    } catch (error) {
+      console.error('Error fetching all Equals:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
 
 // Use import.meta.url and fileURLToPath to get __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);
