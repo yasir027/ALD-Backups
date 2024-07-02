@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./FrontDashboard.module.css";
 
-const FrontDashboard = ({ onItemSelect, onZoom, onPrint, activeContent }) => { // Add activeContent prop
+const FrontDashboard = ({ onItemSelect, onZoom, onPrint }) => {
   const navigate = useNavigate();
   const [activeItem, setActiveItem] = useState("headnotes"); // Default to "headnotes"
 
@@ -33,11 +33,7 @@ const FrontDashboard = ({ onItemSelect, onZoom, onPrint, activeContent }) => { /
     }
     setActiveItem(key); // Set the active item on click
   };
-
-  // Update activeItem when activeContent changes
-  React.useEffect(() => {
-    setActiveItem(activeContent);
-  }, [activeContent]);
+  
 
   return (
     <div className={styles.dashboard}>
