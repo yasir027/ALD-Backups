@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from "react";
 import styles from "./JudgmentContent.module.css";
 
-const JudgmentContent = ({ judgmentData, searchTerms }) => {
+const JudgmentContent = ({ judgmentData, setReferredCitation  ,searchTerms = [] }) => {
   const paraRefs = useRef({});
 
   const formatDate = (dateString) => {
@@ -122,14 +122,48 @@ const JudgmentContent = ({ judgmentData, searchTerms }) => {
     console.log('Current paragraph refs:', paraRefs.current);
   }, [judgmentData]);
 
+  
+  const generateNewCitation = (originalCitation, judgmentData) => {
+    console.log('generateNewCitation called with:', { originalCitation, judgmentData });
+  
+    // Split original citation by spaces assuming citation format
+    const parts = originalCitation.split(' ');
+    
+    // Extracting the courtInfo from the originalCitation
+    const courtInfo = originalCitation.match(/\(([^0-9)]+)\)/g);
+    
+    //extracting the last for digits for the year
+    // Extract year from judgmentDOJ (assuming judgmentDOJ format is ddmmyyyy)
+  const year = judgmentData.judgmentDOJ.substring(4); // Extracts the last 4 characters as year
+
+    let newCitation = `${year} ALD Online`; // Replace 'year' with 'judgmentData.judgmentDOJ'
+  
+    // Add citation serial number if available
+    if (judgmentData && judgmentData.CitationSerialNo && judgmentData.CitationSerialNo.serialNumber !== undefined) {
+      newCitation = ` ${newCitation} ${judgmentData.CitationSerialNo.serialNumber}`;
+    }
+  
+    if (courtInfo) {
+      newCitation += ` ${courtInfo.join(' ')}`;
+    }
+  
+    return newCitation;
+  };
+  
+
+  const handleCitationClick = (citation) => {
+    console.log("Clicked Citation", citation);
+    setReferredCitation(citation);
+  };
+
   return (
     <div className={styles.scrollableText}>
       <h3 className={styles.centered}>
         {judgmentData ? (
           <>
-            {highlightText(judgmentData.judgmentCitation, searchTerms)}<br />
-            {highlightText(judgmentData.judgmentCourtText, searchTerms)}
-            <br /><br />
+            {highlightText(judgmentData.judgmentCitation, searchTerms)}<br /><br />
+          {generateNewCitation(judgmentData.judgmentCitation, judgmentData)} 
+<br /><br/>
             {highlightText(judgmentData.judgmentJudges, searchTerms)}
             <br /><br />
             {judgmentData.judgmentNo || judgmentData.judgmentDOJ ? (
@@ -170,7 +204,21 @@ const JudgmentContent = ({ judgmentData, searchTerms }) => {
           ''
         )}
       </div>
-      <div>
+
+      {/* Citations */}
+     <div>
+  {judgmentData && judgmentData.judgmentPetitionerCouncil && (
+    <h5>Petitioner Counsel: {highlightText(judgmentData.judgmentPetitionerCouncil, searchTerms)}</h5>
+  )}
+  {judgmentData && judgmentData.judgmentRespondentCouncil && (
+    <h5>Respondent Counsel: {highlightText(judgmentData.judgmentRespondentCouncil, searchTerms)}</h5>
+  )}
+  {judgmentData && judgmentData.judgmentRespondentCouncil && (
+    <h5>Counsels Appeared: {highlightText(judgmentData.judgmentRespondentCouncil, searchTerms)}</h5>
+  )}
+</div>
+
+<div>
         {judgmentData && judgmentData.JudgmentTexts ? (
           judgmentData.JudgmentTexts.map((text) => (
             <div key={text.judgementTextId}>
@@ -181,18 +229,17 @@ const JudgmentContent = ({ judgmentData, searchTerms }) => {
                   <ul style={{ listStyleType: 'none', paddingLeft: 0 }}>
                     {text.judgmentsCiteds.map((citation, index) => (
                       <li key={index}>
-                      {highlightText(citation.judgmentsCitedParties, searchTerms)}
-                      {highlightText(citation.judgmentsCitedEqualCitation, searchTerms)}
-                      {citation.judgmentsCitedRefferedCitation &&
-                        ` = ${highlightText(citation.judgmentsCitedRefferedCitation, searchTerms)}`}
+                        {highlightText(citation.judgmentsCitedParties, searchTerms)}
+                        <a href="#" onClick={() => handleCitationClick(citation.judgmentsCitedRefferedCitation)}>
+                          {highlightText(citation.judgmentsCitedRefferedCitation, searchTerms)}
+                        </a>
+                        {` , ${highlightText(citation.judgmentsCitedRefferedCitation, searchTerms)} = `}
+                        {highlightText(citation.judgmentsCitedEqualCitation, searchTerms)}
                         {citation.judgmentsCitedParaLink && (
                           <>
                             {extractNumbersFromLink(citation.judgmentsCitedParaLink).map((paraNo, idx) => (
                               <React.Fragment key={`${index}_${idx}`}>
-                                <a
-                                  href="#"
-                                  onClick={() => scrollToPara(paraNo)}
-                                >
+                                <a href="#" onClick={() => scrollToPara(paraNo)}>
                                   {` Para ${paraNo}`}
                                 </a>
                                 {idx < extractNumbersFromLink(citation.judgmentsCitedParaLink).length - 1 && ", "}
