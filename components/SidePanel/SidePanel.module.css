@@ -102,7 +102,7 @@
   justify-content: center;
   background-color: transparent;
   width: 200px;
-  height: 500px;
+ 
   padding: 10px 0px 10px 0px;
   border-radius: 0 20px 20px 0;
   border-left: none;
@@ -110,6 +110,7 @@
   border-top: 1px solid #e34a3e;
   border-bottom: 1px solid #e34a3e;
   margin-left: 10px;
+  margin-top: 10px;
 
 }
 
@@ -147,7 +148,7 @@
 .button {
   display: flex;
   justify-content: flex-end; /* Align button to the right */
-  margin-top: 20px; /* Add some spacing */
+  margin-top: 10px; /* Add some spacing */
   margin-bottom: 15px;
 }
 
@@ -189,4 +190,47 @@
 .clearButton:hover {
   background-color: #e9ecef; /* Lighter gray on hover */
   border-color: #868e96; /* Darker gray border on hover */
+}
+
+.caseNoList{
+  max-height: 250px;
+  width: 185px;
+  overflow-y: scroll;
+  .caseNoItem{
+    padding: 10px;
+    border-top: 1px solid grey;
+    border-bottom: 1px solid grey;
+   
+  }
+  .caseNoItem:hover{
+    background-color: #495057;
+    color: white;
+  }
+
+
+  &::-webkit-scrollbar {
+    width: 7px;
+    background-color: transparent; /* Makes scrollbar background transparent */
+}
+
+&::-webkit-scrollbar-thumb {
+    background-color: transparent; /* Initially make thumb transparent */
+    border-radius: 10px; /* Rounded corners for the thumb */
+}
+
+&:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(145, 145, 145, 0.5); /* Visible on hover with transparency */
+}    &::-webkit-scrollbar {
+  width: 7px;
+  background-color: transparent; /* Makes scrollbar background transparent */
+}
+
+&::-webkit-scrollbar-thumb {
+  background-color: transparent; /* Initially make thumb transparent */
+  border-radius: 10px; /* Rounded corners for the thumb */
+}
+
+&:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(145, 145, 145, 0.5); /* Visible on hover with transparency */
+}
 }
