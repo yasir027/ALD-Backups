@@ -20,9 +20,13 @@ const IndexPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [selectedRow, setSelectedRow] = useState(null); // State to track the selected row
+  const [showPageUpButton, setShowPageUpButton] = useState(false); // State to show page up button
+  const [searchTerms, setSearchTerms] = useState([]); // Add this line
+  const [isFullScreen, setIsFullScreen] = useState(false);// state for full screen
+
   const contentRef = useRef();
 
-  //adding affan
+  // Adding state for results, error, and judgment count
   const [results, setResults] = useState([]);
   const [error, setError] = useState(null);
   const [judgmentCount, setJudgmentCount] = useState(0);
@@ -68,15 +72,29 @@ const IndexPage = () => {
     handleSearchById(data.judgmentId);
   };
 
-  useEffect(() => {
-    // Set selected row to the first row when results are loaded
-    if (results.length > 0) {
-      setSelectedRow(results[0]);
-      handleRowClick(results[0]); // Simulate click on the first row to load its content
+  const scrollToTop = () => {
+    if (contentRef.current) {
+      contentRef.current.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
     }
-  }, [results]);
+  };
 
- 
+  useEffect(() => {
+    // Set selected row to the last row when results are loaded
+    if (results.length > 0 && !selectedRow) {
+      setSelectedRow(results[0]); // Set to the last row
+      handleRowClick(results[0]); // Simulate click on the last row to load its content
+    }
+  }, [results, selectedRow]);
+
+  useEffect(() => {
+    // Scroll to top whenever judgmentData changes
+    if (judgmentData) {
+      scrollToTop();
+    }
+  }, [judgmentData]);
 
   const handleZoom = (type) => {
     setFontSize((prev) => (type === "plus" ? prev + 2 : prev - 2));
@@ -96,7 +114,7 @@ const IndexPage = () => {
 
   const handleResultClick = (id) => {
     setJudgmentId(id);
-    handleSearchById();
+    handleSearchById(id); // Pass the id parameter here
   };
 
   const handleSaveToPad = () => {
@@ -104,11 +122,71 @@ const IndexPage = () => {
     localStorage.setItem("padData", JSON.stringify(dataToSave));
   };
 
+  const handlePageUp = () => {
+    if (contentRef.current) {
+      contentRef.current.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    }
+  };
+
+  useEffect(() => {
+    // Function to update showPageUpButton state based on scroll position
+    const handleScroll = () => {
+      if (contentRef.current) {
+        const scrollTop = contentRef.current.scrollTop;
+        setShowPageUpButton(scrollTop > 100); // Adjust this value as needed
+      }
+    };
+
+    // Attach scroll event listener to contentRef
+    if (contentRef.current) {
+      contentRef.current.addEventListener("scroll", handleScroll);
+    }
+
+    // Clean up function to remove event listener
+    return () => {
+      if (contentRef.current) {
+        contentRef.current.removeEventListener("scroll", handleScroll);
+      }
+    };
+  }, []);
+
+  //function for fullscreen
+  //fullscreen function
+  const handleToggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+    setIsFullScreen(!isFullScreen);
+  };
+
+  useEffect(() => {
+    const handleFullScreenChange = () => {
+      setIsFullScreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullScreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullScreenChange);
+    };
+  }, []);
+
+
   return (
     <div>
-      <SubHeader judgmentData={judgmentData} />
-      <FrontDashboard onItemSelect={handleContentChange} onZoom={handleZoom} onPrint={handlePrint} />
-      {/* remove input later */}
+      <SubHeader judgmentData={judgmentData} onToggleFullScreen={handleToggleFullScreen} isFullScreen={isFullScreen} /> {/* Pass the toggle function */}
+      <FrontDashboard
+        onItemSelect={handleContentChange}
+        onZoom={handleZoom}
+        onPrint={handlePrint}
+        judgmentCount={judgmentCount} // Pass the judgmentCount as a prop
+      />
+      {/* Remove input later */}
       {/* Judgment ID Search */}
 
       {/* Search Results */}
@@ -131,19 +209,35 @@ const IndexPage = () => {
         </table>
       )}
 
-      <div className={styles.sideNscroll}>
-        <SidePanel setResults={setResults} setJudgmentCount={setJudgmentCount} setError={setError} />
-        <div className={styles.scrollableText} ref={contentRef} style={{ fontSize: `${fontSize}px` }}>
-          {activeContent === "judgment" && <JudgmentContent judgmentData={judgmentData} />}
+<div className={`${styles.sideNscroll} ${isFullScreen ? styles.fullScreen : ''}`}> {/* Apply full-screen class */}
+        {!isFullScreen && (
+        <SidePanel 
+          setResults={setResults} 
+          setJudgmentCount={setJudgmentCount} 
+          setError={setError} 
+          setSearchTerms={setSearchTerms} 
+         
+        />
+      )}<div 
+      className={`${styles.scrollableText} ${isFullScreen ? styles.fullScreenText : ''}`} 
+      ref={contentRef} 
+      style={{ fontSize: `${fontSize}px` }}
+    > 
+          {activeContent === "judgment" && <JudgmentContent judgmentData={judgmentData} searchTerms={searchTerms} />}
           {activeContent === "headnotes" && <HeadnotesContent judgmentData={judgmentData} />}
           {activeContent === "status" && <StatusContent judgmentData={judgmentData} />}
           {activeContent === "equals" && <EqualsContent judgmentData={judgmentData} />}
           {activeContent === "cited" && <CitedContent judgmentData={judgmentData} />}
           {activeContent === "notes" && <NotesContent />}
         </div>
-        <EditBar />
+        {showPageUpButton && (
+          <button className={styles.pageUpButton} onClick={handlePageUp}>
+            ↑
+          </button>
+        )}
+        
       </div>
-      <RearDashboard results={results} onRowClick={handleRowClick} selectedRow={selectedRow} onSaveToPad={handleSaveToPad} />
+      <RearDashboard results={results} onRowClick={handleRowClick} selectedRow={selectedRow} onSaveToPad={handleSaveToPad} judgmentCount={judgmentCount} />
     </div>
   );
 };
