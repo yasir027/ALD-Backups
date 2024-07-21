@@ -1,22 +1,14 @@
-// RearDashboard.jsx
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import styles from "./RearDashboard.module.css";
 import JudgmentsTable from "../JudgmentsTable/JudgmentsTable";
 
 function RearDashboard({ results, onRowClick, onSaveToPad, judgmentCount }) {
   const [showTable, setShowTable] = useState(false);
-  const [selectedRow, setSelectedRow] = useState(null);
+  const [selectedRow, setSelectedRow] = useState(null); // State to track the selected row
   const [currentJudgmentCitation, setCurrentJudgmentCitation] = useState("");
-
-  useEffect(() => {
-    // Set the selected row to the first row when results are loaded
-    if (results.length > 0 && !selectedRow) {
-      setSelectedRow(results[0]);
-      setCurrentJudgmentCitation(results[0].judgmentCitation); // Set initial citation
-      onRowClick(results[0]);
-    }
-  }, [results, selectedRow, onRowClick]);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [filteredResults, setFilteredResults] = useState(results);
 
   const handleShowClick = () => {
     setShowTable(!showTable);
@@ -26,32 +18,32 @@ function RearDashboard({ results, onRowClick, onSaveToPad, judgmentCount }) {
   };
 
   const handleNextClick = () => {
-    const currentIndex = results.findIndex((row) => row === selectedRow);
-    const nextIndex = currentIndex < results.length - 1 ? currentIndex + 1 : 0;
-    const nextRow = results[nextIndex];
+    const currentIndex = filteredResults.findIndex((row) => row === selectedRow);
+    const nextIndex = currentIndex < filteredResults.length - 1 ? currentIndex + 1 : 0;
+    const nextRow = filteredResults[nextIndex];
     setSelectedRow(nextRow);
     setCurrentJudgmentCitation(nextRow.judgmentCitation); // Update citation on row change
     onRowClick(nextRow);
   };
 
   const handlePrevClick = () => {
-    const currentIndex = results.findIndex((row) => row === selectedRow);
-    const prevIndex = currentIndex > 0 ? currentIndex - 1 : results.length - 1;
-    const prevRow = results[prevIndex];
+    const currentIndex = filteredResults.findIndex((row) => row === selectedRow);
+    const prevIndex = currentIndex > 0 ? currentIndex - 1 : filteredResults.length - 1;
+    const prevRow = filteredResults[prevIndex];
     setSelectedRow(prevRow);
     setCurrentJudgmentCitation(prevRow.judgmentCitation); // Update citation on row change
     onRowClick(prevRow);
   };
 
   const handleFirstClick = () => {
-    const firstRow = results[0];
+    const firstRow = filteredResults[0]; // Select the first row
     setSelectedRow(firstRow);
     setCurrentJudgmentCitation(firstRow.judgmentCitation); // Update citation on row change
     onRowClick(firstRow);
   };
 
   const handleLastClick = () => {
-    const lastRow = results[results.length - 1];
+    const lastRow = filteredResults[filteredResults.length - 1];
     setSelectedRow(lastRow);
     setCurrentJudgmentCitation(lastRow.judgmentCitation); // Update citation on row change
     onRowClick(lastRow);
@@ -80,15 +72,69 @@ function RearDashboard({ results, onRowClick, onSaveToPad, judgmentCount }) {
     onRowClick(judgment);
   };
 
+  const handleInitialLoad = useCallback(
+    (initialRow) => {
+      if (!selectedRow) {
+        setSelectedRow(initialRow);
+        setCurrentJudgmentCitation(initialRow.judgmentCitation);
+        onRowClick(initialRow);
+      }
+    },
+    [selectedRow, onRowClick]
+  );
+
+  const filterResultsByDate = () => {
+    const from = fromDate ? new Date(fromDate) : new Date("1900-01-01");
+    const to = toDate ? new Date(toDate) : new Date();
+    const filtered = results.filter((result) => {
+      const judgmentDate = new Date(
+        result.judgmentDOJ.slice(4, 8) + "-" + result.judgmentDOJ.slice(2, 4) + "-" + result.judgmentDOJ.slice(0, 2)
+      );
+      return judgmentDate >= from && judgmentDate <= to;
+    });
+    setFilteredResults(filtered);
+  };
+
+  useEffect(() => {
+    filterResultsByDate();
+  }, [fromDate, toDate, results]);
+
+  useEffect(() => {
+    // Load initial row if results are available
+    if (filteredResults.length > 0) {
+      handleInitialLoad(filteredResults[0]); // Select the first row by default
+    }
+  }, [filteredResults, handleInitialLoad]);
+
+  const handleClearDates = () => {
+    setFromDate("");
+    setToDate("");
+  };
+
   return (
     <main className={styles.main}>
       <div className={styles.rectangle}></div>
       <header className={styles.header}>
         <div className={styles.dateRangeSelector}>
           <label className={styles.dateLabel}>From Date</label>
-          <input className={styles.dateInput} type="date" placeholder="mm/dd/yyyy" />
+          <input
+            className={styles.dateInput}
+            type="date"
+            placeholder="mm/dd/yyyy"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+          />
           <span className={styles.toLabel}>To Date</span>
-          <input className={styles.dateInput} type="date" placeholder="mm/dd/yyyy" />
+          <input
+            className={styles.dateInput}
+            type="date"
+            placeholder="mm/dd/yyyy"
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+          />
+          <button className={styles.clearButton} onClick={handleClearDates}>
+            Clear
+          </button>
         </div>
         <div className={styles.allSelector}>
           <div className={styles.allInputContainer}>
@@ -108,7 +154,7 @@ function RearDashboard({ results, onRowClick, onSaveToPad, judgmentCount }) {
             Prev
           </button>
           <span className={styles.paginationInfo}>
-            Judgment {results.findIndex((row) => row === selectedRow) + 1} of {results.length}
+          Judgment {filteredResults.findIndex((row) => row === selectedRow) + 1} of {filteredResults.length} {/* ChatGPT modified this line to start pagination from 1 */}
           </span>
           <button className={styles.paginationButton} onClick={handleNextClick}>
             Next
@@ -134,11 +180,12 @@ function RearDashboard({ results, onRowClick, onSaveToPad, judgmentCount }) {
       </footer>
       {showTable ? (
         <div className={styles.table}>
-          {results.length > 0 ? (
+          {filteredResults.length > 0 ? (
             <JudgmentsTable
-              judgmentData={results}
+              judgmentData={filteredResults}
               onRowClick={handleRowClick} // Pass local handler to update selectedRow
               selectedRow={selectedRow}
+              onInitialLoad={handleInitialLoad} // Pass initial load callback
             />
           ) : (
             <p>No judgments found</p>
