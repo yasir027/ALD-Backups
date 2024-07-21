@@ -22,6 +22,10 @@ const IndexPage = () => {
   const [selectedRow, setSelectedRow] = useState(null); // State to track the selected row
   const [showPageUpButton, setShowPageUpButton] = useState(false); // State to show page up button
   const [searchTerms, setSearchTerms] = useState([]); // Add this line
+  const [citation, setCitation] = useState(null);
+  const [referredCitation, setReferredCitation] = useState(null);
+  const [fullCitation, setFullCitation] = useState('');
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const contentRef = useRef();
 
   // Adding state for results, error, and judgment count
@@ -153,9 +157,37 @@ const IndexPage = () => {
     };
   }, []);
 
+  //judgmentreferredcitation click
+  const handleSetCitation = (newCitation) => {
+    setCitation(newCitation);
+  };
+
+  //fullscreen function
+  const handleToggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+    setIsFullScreen(!isFullScreen);
+  };
+
+  useEffect(() => {
+    const handleFullScreenChange = () => {
+      setIsFullScreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullScreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullScreenChange);
+    };
+  }, []);
+
+
   return (
     <div>
-      <SubHeader judgmentData={judgmentData} />
+      <SubHeader judgmentData={judgmentData} onToggleFullScreen={handleToggleFullScreen} isFullScreen={isFullScreen} /> {/* Pass the toggle function */}
       <FrontDashboard
         onItemSelect={handleContentChange}
         onZoom={handleZoom}
@@ -185,11 +217,22 @@ const IndexPage = () => {
         </table>
       )}
 
-      <div className={styles.sideNscroll}>
-        <SidePanel setResults={setResults} setJudgmentCount={setJudgmentCount} setError={setError} setSearchTerms={setSearchTerms} />
-        <div className={styles.scrollableText} ref={contentRef} style={{ fontSize: `${fontSize}px` }}>
-          {activeContent === "judgment" && <JudgmentContent judgmentData={judgmentData} searchTerms={searchTerms} />}
-          {activeContent === "headnotes" && <HeadnotesContent judgmentData={judgmentData} />}
+      <div className={`${styles.sideNscroll} ${isFullScreen ? styles.fullScreen : ''}`}> {/* Apply full-screen class */}
+        {!isFullScreen && (
+        <SidePanel 
+          setResults={setResults} 
+          setJudgmentCount={setJudgmentCount} 
+          setError={setError} 
+          setSearchTerms={setSearchTerms} 
+          fullCitation={referredCitation} 
+          setFullCitation={setReferredCitation} 
+        />
+      )}<div 
+          className={`${styles.scrollableText} ${isFullScreen ? styles.fullScreenText : ''}`} 
+          ref={contentRef} 
+          style={{ fontSize: `${fontSize}px` }}
+        >          {activeContent === "judgment" && <JudgmentContent judgmentData={judgmentData} searchTerms={searchTerms} setReferredCitation={setReferredCitation} />}
+          {activeContent === "headnotes" && <HeadnotesContent judgmentData={judgmentData} searchTerms={searchTerms} />}
           {activeContent === "status" && <StatusContent judgmentData={judgmentData} />}
           {activeContent === "equals" && <EqualsContent judgmentData={judgmentData} searchTerms={searchTerms} />}
           {activeContent === "cited" && <CitedContent judgmentData={judgmentData} searchTerms={searchTerms} />}
