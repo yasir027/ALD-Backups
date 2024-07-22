@@ -12,7 +12,7 @@ import CitedContent from "../components/CitedContent/CitedContent";
 import NotesContent from "../components/NotesContent/NotesContent";
 import styles from "./IndexPage.module.css";
 
-const IndexPage = () => {
+const CaseFinder = () => {
   const [judgmentId, setJudgmentId] = useState('');
   const [judgmentData, setJudgmentData] = useState(null);
   const [activeContent, setActiveContent] = useState("headnotes");
@@ -22,6 +22,8 @@ const IndexPage = () => {
   const [selectedRow, setSelectedRow] = useState(null); // State to track the selected row
   const [showPageUpButton, setShowPageUpButton] = useState(false); // State to show page up button
   const [searchTerms, setSearchTerms] = useState([]); // Add this line
+  const [referredCitation, setReferredCitation] = useState(null);
+  const [fullCitation, setFullCitation] = useState('');
   const [isFullScreen, setIsFullScreen] = useState(false);// state for full screen
 
   const contentRef = useRef();
@@ -153,7 +155,11 @@ const IndexPage = () => {
     };
   }, []);
 
-  //function for fullscreen
+ //judgmentreferredcitation click
+ const handleSetCitation = (newCitation) => {
+  setCitation(newCitation);
+};
+
   //fullscreen function
   const handleToggleFullScreen = () => {
     if (!document.fullscreenElement) {
@@ -216,6 +222,8 @@ const IndexPage = () => {
           setJudgmentCount={setJudgmentCount} 
           setError={setError} 
           setSearchTerms={setSearchTerms} 
+          fullCitation={referredCitation} 
+          setFullCitation={setReferredCitation}
          
         />
       )}<div 
@@ -223,7 +231,7 @@ const IndexPage = () => {
       ref={contentRef} 
       style={{ fontSize: `${fontSize}px` }}
     > 
-          {activeContent === "judgment" && <JudgmentContent judgmentData={judgmentData} searchTerms={searchTerms} />}
+          {activeContent === "judgment" && <JudgmentContent judgmentData={judgmentData} searchTerms={searchTerms} setReferredCitation={setReferredCitation} />}
           {activeContent === "headnotes" && <HeadnotesContent judgmentData={judgmentData} />}
           {activeContent === "status" && <StatusContent judgmentData={judgmentData} />}
           {activeContent === "equals" && <EqualsContent judgmentData={judgmentData} />}
@@ -242,5 +250,5 @@ const IndexPage = () => {
   );
 };
 
-export default IndexPage;
+export default CaseFinder;
 
