@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import styles from "./CFSidePanel.module.css";
 
-function SidePanel({ setResults, setJudgmentCount, setError, setSearchTerms }) {
+function SidePanel({ setResults, setJudgmentCount, setError, setSearchTerms, onSearch, fullCitation,
+  setFullCitation, }) 
+  {
   const [section, setSection] = useState('');
   const [subsection, setSubsection] = useState('');
   const [judge, setJudge] = useState('');
@@ -32,6 +34,10 @@ function SidePanel({ setResults, setJudgmentCount, setError, setSearchTerms }) {
   const [advocateList, setAdvocateList] = useState([]);
   const [topicList, setTopicList] = useState([]);
   const [judgeList, setJudgeList] = useState([]);
+  const [citations, setCitations] = useState('');  // Added from code 1
+  const [citation, setCitation] = useState("");
+
+
 
 
   const handleAddAct = () => {
@@ -274,6 +280,54 @@ function SidePanel({ setResults, setJudgmentCount, setError, setSearchTerms }) {
   const toggleFilterPanel = () => {
     setIsFilterPanelOpen(!isFilterPanelOpen);
   };
+
+  //Referred citation search (FullCitation)
+//Citation search
+const handleCitationSearch = async (selectedCitation) => {
+  try {
+    const CitationText = selectedCitation.judgmentCitation || '';
+    const response = await fetch(`http://localhost:3000/api/searchByCitation?CitationText=${CitationText}`);
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    const data = await response.json();
+    const uniqueResults = Array.from(new Set(data.map(result => result.judgmentId)))
+      .map(judgmentId => data.find(result => result.judgmentId === judgmentId));
+    setResults(uniqueResults);
+    setJudgmentCount(uniqueResults.length);
+    setSearchTerms([CitationText].filter(term => term));
+  } catch (err) {
+    console.error('Error fetching data:', err);
+    setError(err);
+    setResults([]);
+    setJudgmentCount(0);
+  }
+};
+
+useEffect(() => {
+  if (citation && onSearch) {
+    // Perform search action here using onSearch function
+    console.log("Searching for citation:", citation);
+    onSearch(citation); // Example: Call onSearch function with citation as argument
+  }
+}, [citation, onSearch]);
+
+
+  useEffect(() => {
+    if (fullCitation && fullCitation.trim() !== '') {
+      handleCitationSearch({ judgmentCitation: fullCitation }); // Call handleCitationSearch with a mock object
+    }
+  }, [fullCitation, handleCitationSearch]);
+  
+   // Function to search when the judgmentreferredcitation is referred as a prop(fullCitation)
+   useEffect(() => {
+    if (fullCitation && fullCitation.trim() !== '') {
+      handleCitationSearch({ judgmentCitation: fullCitation }); // Call handleCitationSearch with a mock object
+      setFullCitation(''); // Clear fullCitation state to prevent repeated searches
+    }
+  }, [fullCitation, handleCitationSearch]);
+  
+  
 
   const handleClear = () => {
     setLegislationName(''); // Clear ACT field
