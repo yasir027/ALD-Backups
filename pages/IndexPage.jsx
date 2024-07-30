@@ -231,7 +231,8 @@ const IndexPage = () => {
           className={`${styles.scrollableText} ${isFullScreen ? styles.fullScreenText : ''}`} 
           ref={contentRef} 
           style={{ fontSize: `${fontSize}px` }}
-        >          {activeContent === "judgment" && <JudgmentContent judgmentData={judgmentData} searchTerms={searchTerms} setReferredCitation={setReferredCitation} />}
+        >          
+          {activeContent === "judgment" && <JudgmentContent judgmentData={judgmentData} searchTerms={searchTerms} setReferredCitation={setReferredCitation} />}
           {activeContent === "headnotes" && <HeadnotesContent judgmentData={judgmentData} searchTerms={searchTerms} />}
           {activeContent === "status" && <StatusContent judgmentData={judgmentData} />}
           {activeContent === "equals" && <EqualsContent judgmentData={judgmentData} searchTerms={searchTerms} />}
