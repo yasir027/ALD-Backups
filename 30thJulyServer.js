@@ -543,56 +543,63 @@ app.get('/judgments/:judgmentId', async (req, res) => {
       return res.status(404).json({ error: 'Judgment not found' });
     }
 
-    const currentCitation = judgment.judgmentCitation;
-    if (!currentCitation) {
-      return res.status(400).json({ error: 'Current citation not available' });
-    }
-
-    const countReferringCitations = await judgmentsCited.count({
-      where: {
-        judgmentsCitedRefferedCitation: {
-          [Op.like]: `%${currentCitation}%`
-        }
-      }
-    });
-
-    const referringCitations = await judgmentsCited.findAll({
-      attributes: ['judgmentsCitedRefferedCitation', 'judgmentsCitedParties', 'judgmentsCitedParaLink', 'judgementTextId'],
-      where: {
-        judgmentsCitedRefferedCitation: {
-          [Op.like]: `%${currentCitation}%`
-        }
-      }
-    });
-
-    if (!referringCitations || referringCitations.length === 0) {
-      return res.status(404).json({ error: 'No referring citations found' });
-    }
-
-    const judgmentTextIds = referringCitations.map(citation => citation.judgementTextId);
-
-    const referringJudgments = await JudgmentText.findAll({
-      where: {
-        judgementTextId: {
-          [Op.in]: judgmentTextIds
-        }
-      },
-      include: [
-        {
-          model: Judgment,
-          attributes: ['judgmentCitation']
-        }
-      ]
-    });
-
+    // Initialize response object with judgment data
     const response = {
-      ...judgment.toJSON(),
-      referringCitationCount: countReferringCitations,
-      referringCitations: referringJudgments.map(jText => ({
-        judgmentCitation: jText.Judgment?.judgmentCitation,
-        judgmentsCited: referringCitations.filter(citation => citation.judgementTextId === jText.judgementTextId)
-      }))
+      ...judgment.toJSON()
     };
+
+    const currentCitation = judgment.judgmentCitation;
+
+    if (currentCitation) {
+      // If there is a current citation, fetch referring citations
+      const countReferringCitations = await judgmentsCited.count({
+        where: {
+          judgmentsCitedRefferedCitation: {
+            [Op.like]: `%${currentCitation}%`
+          }
+        }
+      });
+
+      const referringCitations = await judgmentsCited.findAll({
+        attributes: ['judgmentsCitedRefferedCitation', 'judgmentsCitedParties', 'judgmentsCitedParaLink', 'judgementTextId'],
+        where: {
+          judgmentsCitedRefferedCitation: {
+            [Op.like]: `%${currentCitation}%`
+          }
+        }
+      });
+
+      if (referringCitations.length > 0) {
+        const judgmentTextIds = referringCitations.map(citation => citation.judgementTextId);
+
+        const referringJudgments = await JudgmentText.findAll({
+          where: {
+            judgementTextId: {
+              [Op.in]: judgmentTextIds
+            }
+          },
+          include: [
+            {
+              model: Judgment,
+              attributes: ['judgmentCitation']
+            }
+          ]
+        });
+
+        response.referringCitationCount = countReferringCitations;
+        response.referringCitations = referringJudgments.map(jText => ({
+          judgmentCitation: jText.Judgment?.judgmentCitation,
+          judgmentsCited: referringCitations.filter(citation => citation.judgementTextId === jText.judgementTextId)
+        }));
+      } else {
+        response.referringCitationCount = 0;
+        response.referringCitations = [];
+      }
+    } else {
+      // If no current citation, indicate in the response
+      response.referringCitationCount = 0;
+      response.referringCitations = [];
+    }
 
     res.json(response);
   } catch (error) {
