@@ -4,16 +4,20 @@ import JudgmentsTable from "../JudgmentsTable/JudgmentsTable";
 
 function RearDashboard({ results, onRowClick, onSaveToPad, judgmentCount }) {
   const [showTable, setShowTable] = useState(false);
-  const [selectedRow, setSelectedRow] = useState(null); // State to track the selected row
+  const [selectedRow, setSelectedRow] = useState(null);
   const [currentJudgmentCitation, setCurrentJudgmentCitation] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [filterType, setFilterType] = useState("All");
+  const [courtType, setCourtType] = useState("All");
   const [filteredResults, setFilteredResults] = useState(results);
+  const [searchQuery, setSearchQuery] = useState("");
+
 
   const handleShowClick = () => {
     setShowTable(!showTable);
     if (!showTable && selectedRow) {
-      onSaveToPad(selectedRow); // Pass the selected row to be saved
+      onSaveToPad(selectedRow);
     }
   };
 
@@ -22,7 +26,7 @@ function RearDashboard({ results, onRowClick, onSaveToPad, judgmentCount }) {
     const nextIndex = currentIndex < filteredResults.length - 1 ? currentIndex + 1 : 0;
     const nextRow = filteredResults[nextIndex];
     setSelectedRow(nextRow);
-    setCurrentJudgmentCitation(nextRow.judgmentCitation); // Update citation on row change
+    setCurrentJudgmentCitation(nextRow.judgmentCitation);
     onRowClick(nextRow);
   };
 
@@ -31,44 +35,45 @@ function RearDashboard({ results, onRowClick, onSaveToPad, judgmentCount }) {
     const prevIndex = currentIndex > 0 ? currentIndex - 1 : filteredResults.length - 1;
     const prevRow = filteredResults[prevIndex];
     setSelectedRow(prevRow);
-    setCurrentJudgmentCitation(prevRow.judgmentCitation); // Update citation on row change
+    setCurrentJudgmentCitation(prevRow.judgmentCitation);
     onRowClick(prevRow);
   };
 
   const handleFirstClick = () => {
-    const firstRow = filteredResults[0]; // Select the first row
+    const firstRow = filteredResults[0];
     setSelectedRow(firstRow);
-    setCurrentJudgmentCitation(firstRow.judgmentCitation); // Update citation on row change
+    setCurrentJudgmentCitation(firstRow.judgmentCitation);
     onRowClick(firstRow);
   };
 
   const handleLastClick = () => {
     const lastRow = filteredResults[filteredResults.length - 1];
     setSelectedRow(lastRow);
-    setCurrentJudgmentCitation(lastRow.judgmentCitation); // Update citation on row change
+    setCurrentJudgmentCitation(lastRow.judgmentCitation);
     onRowClick(lastRow);
   };
 
-  const handleSaveToPadClick = () => {
-    if (selectedRow) {
-      let existingData = localStorage.getItem("padData");
-      try {
-        existingData = JSON.parse(existingData);
-        if (!Array.isArray(existingData)) {
-          existingData = [];
-        }
-      } catch (error) {
+const handleSaveToPadClick = () => {
+  if (filteredResults && filteredResults.length > 0) {
+    let existingData = localStorage.getItem("padData");
+    try {
+      existingData = JSON.parse(existingData);
+      if (!Array.isArray(existingData)) {
         existingData = [];
       }
-      const newData = existingData.concat(selectedRow);
-      localStorage.setItem("padData", JSON.stringify(newData));
-      alert("Data saved to Pad!");
+    } catch (error) {
+      existingData = [];
     }
-  };
+    const newData = existingData.concat(filteredResults);
+    localStorage.setItem("padData", JSON.stringify(newData));
+    alert("Data saved to Pad!");
+  }
+};
+
 
   const handleRowClick = (judgment) => {
     setSelectedRow(judgment);
-    setCurrentJudgmentCitation(judgment.judgmentCitation); // Update citation on row change
+    setCurrentJudgmentCitation(judgment.judgmentCitation);
     onRowClick(judgment);
   };
 
@@ -95,14 +100,53 @@ function RearDashboard({ results, onRowClick, onSaveToPad, judgmentCount }) {
     setFilteredResults(filtered);
   };
 
+  const filterResultsByType = () => {
+    if (filterType === "All") {
+      setFilteredResults(results);
+    } else if (filterType === "Criminal") {
+      const filtered = results.filter((result) =>
+        result.judgmentCitation.includes("(Crl.)")
+      );
+      setFilteredResults(filtered);
+    } else if (filterType === "Civil") {
+      const filtered = results.filter((result) =>
+        !result.judgmentCitation.includes("(Crl.)")
+      );
+      setFilteredResults(filtered);
+    }
+  };
+
+  const filterResultsByCourtName = () => {
+  console.log("Selected court type:", courtType);
+  if (courtType === "ALL") {
+    setFilteredResults(results);
+  } else {
+    const filtered = results.filter((result) => {
+      const isMatch = result.courtName && result.courtName.toUpperCase() === courtType.toUpperCase();
+      console.log(`Filtering result: ${result.courtName}, Match: ${isMatch}`);
+      return isMatch;
+    });
+    console.log("Filtered results:", filtered);
+    setFilteredResults(filtered);
+  }
+};
+
+useEffect(() => {
+  filterResultsByCourtName();
+}, [courtType, results]);
+
+
   useEffect(() => {
     filterResultsByDate();
   }, [fromDate, toDate, results]);
 
   useEffect(() => {
-    // Load initial row if results are available
+    filterResultsByType();
+  }, [filterType, results]);
+
+  useEffect(() => {
     if (filteredResults.length > 0) {
-      handleInitialLoad(filteredResults[0]); // Select the first row by default
+      handleInitialLoad(filteredResults[0]);
     }
   }, [filteredResults, handleInitialLoad]);
 
@@ -110,6 +154,44 @@ function RearDashboard({ results, onRowClick, onSaveToPad, judgmentCount }) {
     setFromDate("");
     setToDate("");
   };
+
+const handleSearch = () => {
+  const query = searchQuery.toLowerCase();
+  
+  // Function to normalize date format to search query format (dd/mm/yyyy)
+  const formatDateForSearch = (dateString) => {
+    // Assuming dateString is in dd/mm/yyyy format
+    const [day, month, year] = dateString.split("/");
+    return `${day}/${month}/${year}`; // Use a common format for comparison
+  };
+
+  const filtered = results.filter((result) => {
+    // List all fields you want to include in the search
+    const fieldsToSearch = [
+      result.judgmentCitation,
+      result.judgmentParties,
+      result.courtName,
+      result.partyNames,
+      formatDateForSearch(result.judgmentDOJ), // Normalize date for search
+      // Add more fields as needed
+    ];
+
+    // Check if any of the fields contain the query
+    return fieldsToSearch.some(field =>
+      field && field.toLowerCase().includes(query)
+    );
+  });
+
+  setFilteredResults(filtered);
+};
+
+
+
+useEffect(() => {
+  handleSearch(); // Apply search filter when searchQuery changes
+}, [searchQuery, results]);
+
+
 
   return (
     <main className={styles.main}>
@@ -137,13 +219,52 @@ function RearDashboard({ results, onRowClick, onSaveToPad, judgmentCount }) {
           </button>
         </div>
         <div className={styles.allSelector}>
-          <div className={styles.allInputContainer}>
-            <div className={styles.allInput}>All</div>
-          </div>
-          <div className={styles.allInputContainer}>
-            <div className={styles.allInput}>All</div>
-          </div>
+          <select
+            className={styles.allDropdown}
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+          >
+            <option value="All">All</option>
+            <option value="Civil">Civil</option>
+            <option value="Criminal">Criminal</option>
+          </select>
         </div>
+        <div className={styles.allSelector}>
+  <select
+    className={styles.allDropdown}
+    value={courtType}
+    onChange={(e) => setCourtType(e.target.value)}
+  >
+    <option value="ALL">All</option>
+    <option value="SUPREME COURT">SUPREME COURT</option>
+    <option value="ALLAHABAD">ALLAHABAD</option>
+    <option value="ANDHRA PRADESH">ANDHRA PRADESH</option>
+    <option value="BOMBAY">BOMBAY</option>
+    <option value="CALCUTTA">CALCUTTA</option>
+    <option value="CHHATTISGARH">CHHATTISGARH</option>
+    <option value="DELHI">DELHI</option>
+    <option value="GAUHATI">GAUHATI</option>
+    <option value="GUJARAT">GUJARAT</option>
+    <option value="HIMACHAL PRADESH">HIMACHAL PRADESH</option>
+    <option value="JAMMU & KASHMIR AND LADAKH">JAMMU & KASHMIR AND LADAKH</option>
+    <option value="JHARKHAND">JHARKHAND</option>
+    <option value="KARNATAKA">KARNATAKA</option>
+    <option value="KERALA">KERALA</option>
+    <option value="MADHYA PRADESH">MADHYA PRADESH</option>
+    <option value="MADRAS">MADRAS</option>
+    <option value="MANIPUR">MANIPUR</option>
+    <option value="MEGHALAYA">MEGHALAYA</option>
+    <option value="ORISSA">ORISSA</option>
+    <option value="PATNA">PATNA</option>
+    <option value="PUNJAB AND HARYANA">PUNJAB AND HARYANA</option>
+    <option value="RAJASTHAN">RAJASTHAN</option>
+    <option value="SIKKIM">SIKKIM</option>
+    <option value="TELANGANA">TELANGANA</option>
+    <option value="TRIPURA">TRIPURA</option>
+    <option value="UTTARAKHAND">UTTARAKHAND</option>
+  </select>
+</div>
+
       </header>
       <footer className={styles.footer}>
         <div className={styles.pagination}>
@@ -154,7 +275,7 @@ function RearDashboard({ results, onRowClick, onSaveToPad, judgmentCount }) {
             Prev
           </button>
           <span className={styles.paginationInfo}>
-          Judgment {filteredResults.findIndex((row) => row === selectedRow) + 1} of {filteredResults.length} {/* ChatGPT modified this line to start pagination from 1 */}
+            Judgment {filteredResults.findIndex((row) => row === selectedRow) + 1} of {filteredResults.length}
           </span>
           <button className={styles.paginationButton} onClick={handleNextClick}>
             Next
@@ -164,13 +285,25 @@ function RearDashboard({ results, onRowClick, onSaveToPad, judgmentCount }) {
           </button>
         </div>
         <div className={styles.caseInfo}>
-          {currentJudgmentCitation} {/* Display current judgment citation */}
+          {currentJudgmentCitation}
         </div>
         <button className={styles.prevCaseButton}>Prev Case</button>
-        <button className={styles.searchButton}>Search</button>
-        <div className={styles.searchBar}>
-          <input className={styles.searchblock} />
-        </div>
+       <div className={styles.searchContainer}>
+          <input
+            className={styles.searchblock}
+            type="text"
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <button
+            className={styles.searchButton}
+            onClick={() => handleSearch()}
+          >
+            Search
+          </button>
+          </div>
+
         <button className={styles.padButton} onClick={handleSaveToPadClick}>
           Pad
         </button>
@@ -183,9 +316,9 @@ function RearDashboard({ results, onRowClick, onSaveToPad, judgmentCount }) {
           {filteredResults.length > 0 ? (
             <JudgmentsTable
               judgmentData={filteredResults}
-              onRowClick={handleRowClick} // Pass local handler to update selectedRow
+              onRowClick={handleRowClick}
               selectedRow={selectedRow}
-              onInitialLoad={handleInitialLoad} // Pass initial load callback
+              onInitialLoad={handleInitialLoad}
             />
           ) : (
             <p>No judgments found</p>
