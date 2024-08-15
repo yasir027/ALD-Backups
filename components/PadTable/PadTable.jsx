@@ -30,7 +30,7 @@ function PadTable({ savedData }) {
                 <td>{formatDate(judgment.judgmentDOJ)}</td>
                 <td>{judgment.judgmentCitation}</td>
                 <td>{judgment.judgmentParties}</td>
-                <td>{judgment.judgmentNo}</td>
+                <td>{judgment.courtName}</td>
               </tr>
             ))
           ) : (
