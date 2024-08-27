@@ -163,128 +163,141 @@ const renderLongNoteParas = (longNoteParas, searchTerms) => {
 
   const isHtml = (text) => /<\/?[a-z][\s\S]*>/i.test(text);
 
+const addInlineStylesToTable = (htmlContent) => {
+  const styledHtmlContent = htmlContent
+    .replace(/<table/g, '<table style="width:auto; max-width:100%; table-layout:fixed; margin:0 auto; border-collapse:collapse;"')
+    .replace(/<th/g, '<th style="padding:10px; border:1px solid #000; text-align:left; background-color:#f8f8f8;"')
+    .replace(/<td/g, '<td style="padding:10px; border:1px solid #000; text-align:left; word-wrap:break-word;"');
+  
+  return styledHtmlContent;
+};
+
+
 
 return (
-    <div className={styles.scrollableText}>
-      {judgmentData ? (
-        <>
-          {/* Existing code for displaying judgment data */}
-          <h3 className={styles.centered}>
-            <h4>JUDGEMENT</h4>
-            {generateNewCitation(judgmentData.judgmentCitation, judgmentData)}<br /><br /> 
-            {highlightText(judgmentData.judgmentCitation, searchTerms)}
-            <br /><br/>
-            {highlightText(judgmentData.judgmentJudges, searchTerms)}
-            <br /><br />
-            {judgmentData.judgmentNo || judgmentData.judgmentDOJ ? (
-              <>{judgmentData.judgmentNo || formatDate(judgmentData.judgmentDOJ)}</>
-            ) : (
-              <></>
-            )}
-            <br /><br />
-            {highlightText(judgmentData.judgmentNoText, searchTerms)}
-            <br /><br />
-            {highlightText(judgmentData.judgmentParties, searchTerms)}
-          </h3>
-          <div>
-            {judgmentData.ShortNotes && judgmentData.ShortNotes.length > 0 ? (
-              judgmentData.ShortNotes.map((shortNote) => (
-                <div key={shortNote.shortNoteId}>
-                  <h4>{extractAndRenderLongNoteLinks(shortNote.shortNoteText).map((element, index) => (
-                    React.isValidElement(element) ? (
-                      <React.Fragment key={index}>
-                        {element}
-                      </React.Fragment>
-                    ) : (
-                      <span key={index}>{highlightText(element, searchTerms)}</span>
-                    )
-                  ))}</h4>
-                  {shortNote.LongNotes && shortNote.LongNotes.map((longNote) => (
-                    <React.Fragment key={longNote.longNoteId}>
-                      {renderLongNoteParas(longNote.LongNoteParas, searchTerms)}
+  <div className={styles.scrollableText}>
+    {judgmentData ? (
+      <>
+        {/* Existing code for displaying judgment data */}
+        <h3 className={styles.centered}>
+          <h4>JUDGEMENT</h4>
+          {generateNewCitation(judgmentData.judgmentCitation, judgmentData)}<br /><br />
+          {highlightText(judgmentData.judgmentCitation, searchTerms)}
+          <br /><br/>
+          {highlightText(judgmentData.judgmentJudges, searchTerms)}
+          <br /><br />
+          {judgmentData.judgmentNo || judgmentData.judgmentDOJ ? (
+            <>{judgmentData.judgmentNo || formatDate(judgmentData.judgmentDOJ)}</>
+          ) : (
+            <></>
+          )}
+          <br /><br />
+          {highlightText(judgmentData.judgmentNoText, searchTerms)}
+          <br /><br />
+          {highlightText(judgmentData.judgmentParties, searchTerms)}
+        </h3>
+        <div>
+          {judgmentData.ShortNotes && judgmentData.ShortNotes.length > 0 ? (
+            judgmentData.ShortNotes.map((shortNote) => (
+              <div key={shortNote.shortNoteId}>
+                <h4>{extractAndRenderLongNoteLinks(shortNote.shortNoteText).map((element, index) => (
+                  React.isValidElement(element) ? (
+                    <React.Fragment key={index}>
+                      {element}
                     </React.Fragment>
-                  ))}
-                </div>
-              ))
-            ) : (
-              ''
-            )}
-          </div>
-          <div>
-            {judgmentData && judgmentData.judgmentPetitionerCouncil && (
-              <h5>Petitioner Counsel: {highlightText(judgmentData.judgmentPetitionerCouncil, searchTerms)}</h5>
-            )}
-            {judgmentData && judgmentData.judgmentRespondentCouncil && (
-              <h5>Respondent Counsel: {highlightText(judgmentData.judgmentRespondentCouncil, searchTerms)}</h5>
-            )}
-            {judgmentData && judgmentData.judgmentRespondentCouncil && (
-              <h5>Counsels Appeared: {highlightText(judgmentData.judgmentRespondentCouncil, searchTerms)}</h5>
-            )}
-          </div>
-          <div>
-            {judgmentData && judgmentData.JudgmentTexts ? (
-              judgmentData.JudgmentTexts.map((text) => (
-                <div key={text.judgementTextId}>
-                  <p>{highlightText(text.judgementTextParaText, searchTerms)}</p>
-                  {text.judgmentsCiteds && text.judgmentsCiteds.length > 0 && (
-                    <div style={{ textAlign: 'left' }}>
-                      <h4>Cases Cited:</h4>
-                      <ul style={{ listStyleType: 'none', paddingLeft: 0 }}>
-                        {text.judgmentsCiteds.map((citation, index) => (
-                          <li key={index}>
-                            {highlightText(citation.judgmentsCitedParties, searchTerms)}
-                            <a href="#" onClick={() => handleCitationClick(citation.judgmentsCitedRefferedCitation)}>
-                              {highlightText(citation.judgmentsCitedRefferedCitation, searchTerms)}
-                            </a>
-                            , {highlightText(citation.judgmentsCitedEqualCitation, searchTerms)}
-                            {citation.judgmentsCitedParaLink && (
-                              <>
-                                {extractNumbersFromLink(citation.judgmentsCitedParaLink).map((paraNo, idx) => (
-                                  <React.Fragment key={`${index}_${idx}`}>
-                                    <a href="#" onClick={() => scrollToPara(paraNo)}>
-                                      {`.[Para ${paraNo}]`}
-                                    </a>
-                                    {idx < extractNumbersFromLink(citation.judgmentsCitedParaLink).length - 1 && ", "}
-                                  </React.Fragment>
-                                ))}
-                              </>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              ))
-            ) : (
-              ' '
-            )}
-          </div>
-          <div>
-            <h3>JUDGMENT</h3>
-            {judgmentData.JudgmentTexts.map((text) =>
-              text.JudgmentTextParas.map((para) => (
-                <div
-                  key={para.judgementTextParaId}
-                  ref={(el) => paraRefs.current[para.judgementTextParaNo] = el}
-                >
-                  {isHtml(para.judgementTextParaText) ? (
-                    <div dangerouslySetInnerHTML={{ __html: para.judgementTextParaText }} />
                   ) : (
-                    <p>
-                      <strong style={{ visibility: 'hidden' }}>{para.judgementTextParaNo}</strong> {highlightText(para.judgementTextParaText, searchTerms)}
-                    </p>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        </>
-      ) : (
-        <p>Select a Judgement to View</p>
-      )}
-    </div>
-  );
+                    <span key={index}>{highlightText(element, searchTerms)}</span>
+                  )
+                ))}</h4>
+                {shortNote.LongNotes && shortNote.LongNotes.map((longNote) => (
+                  <React.Fragment key={longNote.longNoteId}>
+                    {renderLongNoteParas(longNote.LongNoteParas, searchTerms)}
+                  </React.Fragment>
+                ))}
+              </div>
+            ))
+          ) : (
+            ''
+          )}
+        </div>
+        <div>
+          {judgmentData && judgmentData.judgmentPetitionerCouncil && (
+            <h5>Petitioner Counsel: {highlightText(judgmentData.judgmentPetitionerCouncil, searchTerms)}</h5>
+          )}
+          {judgmentData && judgmentData.judgmentRespondentCouncil && (
+            <h5>Respondent Counsel: {highlightText(judgmentData.judgmentRespondentCouncil, searchTerms)}</h5>
+          )}
+          {judgmentData && judgmentData.judgmentOtherCounsel && (
+            <h5>Counsels Appeared: {highlightText(judgmentData.judgmentOtherCounsel, searchTerms)}</h5>
+          )}
+        </div>
+        <div>
+          {judgmentData && judgmentData.JudgmentTexts ? (
+            judgmentData.JudgmentTexts.map((text) => (
+              <div key={text.judgementTextId}>
+                <p>{highlightText(text.judgementTextParaText, searchTerms)}</p>
+                {text.judgmentsCiteds && text.judgmentsCiteds.length > 0 && (
+                  <div style={{ textAlign: 'left' }}>
+                    <h4>Cases Cited:</h4>
+                    <ul style={{ listStyleType: 'none', paddingLeft: 0 }}>
+                      {text.judgmentsCiteds.map((citation, index) => (
+                        <li key={index}>
+                          {highlightText(citation.judgmentsCitedParties, searchTerms)}
+                          <a href="#" onClick={() => handleCitationClick(citation.judgmentsCitedRefferedCitation)}>
+                            {highlightText(citation.judgmentsCitedRefferedCitation, searchTerms)}
+                          </a> 
+                          = {highlightText(citation.judgmentsCitedEqualCitation, searchTerms)}
+                          {citation.judgmentsCitedParaLink && (
+                            <>
+                              {extractNumbersFromLink(citation.judgmentsCitedParaLink).map((paraNo, idx) => (
+                                <React.Fragment key={`${index}_${idx}`}>
+                                  <a href="#" onClick={() => scrollToPara(paraNo)}>
+                                    {`.[Para ${paraNo}]`}
+                                  </a>
+                                  {idx < extractNumbersFromLink(citation.judgmentsCitedParaLink).length - 1 && ", "}
+                                </React.Fragment>
+                              ))}
+                            </>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            ' '
+          )}
+        </div>
+        <div>
+          <h3>JUDGMENT</h3>
+          {judgmentData.JudgmentTexts.map((text) =>
+            text.JudgmentTextParas.map((para) => (
+              <div
+                key={para.judgementTextParaId}
+                ref={(el) => paraRefs.current[para.judgementTextParaNo] = el}
+              >
+                {isHtml(para.judgementTextParaText) ? (
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: addInlineStylesToTable(para.judgementTextParaText) }} 
+                  />
+                ) : (
+                  <p>
+                    <strong style={{ visibility: 'hidden' }}>{para.judgementTextParaNo}</strong>
+                    {highlightText(para.judgementTextParaText, searchTerms)}
+                  </p>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </>
+    ) : (
+      <p>Select a Judgement to View</p>
+    )}
+  </div>
+);
 };
 
 export default JudgmentContent;
