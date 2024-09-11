@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./FrontDashboard.module.css";
 
-const FrontDashboard = ({ onItemSelect, onZoom, onPrint }) => {
+const FrontDashboard = ({ onItemSelect, onZoom, onPrint, onTruePrint }) => {
   const navigate = useNavigate();
   const [activeItem, setActiveItem] = useState("headnotes"); // Default to "headnotes"
 
@@ -26,6 +26,12 @@ const FrontDashboard = ({ onItemSelect, onZoom, onPrint }) => {
       onZoom(key);
     } else if (key === "print") {
       onPrint();
+    } else if (key === "truePrint") {
+      if (typeof onTruePrint === 'function') {
+        onTruePrint();
+      } else {
+        console.error('onTruePrint is not a function');
+      }
     } else if (key === "pad") {
       navigate("/pad");
     } else {
@@ -33,6 +39,7 @@ const FrontDashboard = ({ onItemSelect, onZoom, onPrint }) => {
     }
     setActiveItem(key); // Set the active item on click
   };
+  
   
 
   return (
