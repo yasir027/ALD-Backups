@@ -128,32 +128,35 @@ const renderLongNoteParas = (longNoteParas, searchTerms) => {
   }, [judgmentData]);
 
   
-  const generateNewCitation = (originalCitation, judgmentData) => {
-    console.log('generateNewCitation called with:', { originalCitation, judgmentData });
-  
-    // Split original citation by spaces assuming citation format
-    const parts = originalCitation.split(' ');
-    
-    // Extracting the courtInfo from the originalCitation
-    const courtInfo = originalCitation.match(/\(([^0-9)]+)\)/g);
-    
-    //extracting the last for digits for the year
-    // Extract year from judgmentDOJ (assuming judgmentDOJ format is ddmmyyyy)
-  const year = judgmentData.judgmentDOJ.substring(4); // Extracts the last 4 characters as year
+const generateNewCitation = (originalCitation, judgmentData) => {
 
-    let newCitation = `${year} ALD Online`; // Replace 'year' with 'judgmentData.judgmentDOJ'
+  // Ensure judgmentData is defined and has the expected structure
+  if (!judgmentData || !judgmentData.judgmentDOJ) {
+    console.error('Invalid judgmentData:', judgmentData);
+    return null;
+  }
+
+  // Extract year from judgmentDOJ (assuming format is ddmmyyyy)
+  const year = judgmentData.judgmentDOJ.slice(-4); // Get last 4 characters
   
-    // Add citation serial number if available
-    if (judgmentData && judgmentData.CitationSerialNo && judgmentData.CitationSerialNo.serialNumber !== undefined) {
-      newCitation = ` ${newCitation} ${judgmentData.CitationSerialNo.serialNumber}`;
-    }
+  // Create base citation
+  let newCitation = `${year} ALD Online`;
   
-    if (courtInfo) {
-      newCitation += ` ${courtInfo.join(' ')}`;
-    }
+  // Add citation serial number if available
+  if (judgmentData.citationSerialNo) {
+    newCitation += ` ${judgmentData.citationSerialNo}`;
+  }
   
-    return newCitation;
-  };
+  // Extract court info from original citation
+  const courtInfo = originalCitation.match(/\(([^0-9)]+)\)/g);
+  if (courtInfo) {
+    newCitation += ` ${courtInfo.join(' ')}`;
+  }
+
+  return newCitation.trim(); // Remove any leading/trailing whitespace
+};
+
+
   
 
   const handleCitationClick = (citation) => {
@@ -180,7 +183,6 @@ return (
       <>
         {/* Existing code for displaying judgment data */}
         <h3 className={styles.centered}>
-          <h4>JUDGEMENT</h4>
           {generateNewCitation(judgmentData.judgmentCitation, judgmentData)}<br /><br />
           {highlightText(judgmentData.judgmentCitation, searchTerms)}
           <br /><br/>
@@ -228,7 +230,7 @@ return (
             <h5>Respondent Counsel: {highlightText(judgmentData.judgmentRespondentCouncil, searchTerms)}</h5>
           )}
           {judgmentData && judgmentData.judgmentOtherCounsel && (
-            <h5>Counsels Appeared: {highlightText(judgmentData.judgmentOtherCounsel, searchTerms)}</h5>
+            <h5>Other Counsel: {highlightText(judgmentData.judgmentOtherCounsel, searchTerms)}</h5>
           )}
         </div>
         <div>
@@ -242,24 +244,33 @@ return (
                     <ul style={{ listStyleType: 'none', paddingLeft: 0 }}>
                       {text.judgmentsCiteds.map((citation, index) => (
                         <li key={index}>
-                          {highlightText(citation.judgmentsCitedParties, searchTerms)}
-                          <a href="#" onClick={() => handleCitationClick(citation.judgmentsCitedRefferedCitation)}>
-                            {highlightText(citation.judgmentsCitedRefferedCitation, searchTerms)}
-                          </a> 
-                          = {highlightText(citation.judgmentsCitedEqualCitation, searchTerms)}
-                          {citation.judgmentsCitedParaLink && (
-                            <>
-                              {extractNumbersFromLink(citation.judgmentsCitedParaLink).map((paraNo, idx) => (
-                                <React.Fragment key={`${index}_${idx}`}>
-                                  <a href="#" onClick={() => scrollToPara(paraNo)}>
-                                    {`.[Para ${paraNo}]`}
-                                  </a>
-                                  {idx < extractNumbersFromLink(citation.judgmentsCitedParaLink).length - 1 && ", "}
-                                </React.Fragment>
-                              ))}
-                            </>
-                          )}
-                        </li>
+                            {highlightText(citation.judgmentsCitedParties, searchTerms)}
+                            {highlightText(citation.judgmentsCitedParties, searchTerms) && ', '}
+                            {highlightText(citation.judgmentsCitedRefferedCitation, searchTerms) && (
+                          <>
+                            <a href="#" onClick={() => handleCitationClick(citation.judgmentsCitedRefferedCitation)}>
+                              {highlightText(citation.judgmentsCitedRefferedCitation, searchTerms)}
+                            </a>
+                            {' = '}
+                          </>
+                        )}
+                        {highlightText(citation.judgmentsCitedEqualCitation, searchTerms)}
+                        {citation.judgmentsCitedParaLink && (
+                          <>
+                            {' ('}
+                            {extractNumbersFromLink(citation.judgmentsCitedParaLink).map((paraNo, idx) => (
+                              <React.Fragment key={`${index}_${idx}`}>
+                                <a href="#" onClick={() => scrollToPara(paraNo)}>
+                                  {`[Para ${paraNo}]`}
+                                </a>
+                                {idx < extractNumbersFromLink(citation.judgmentsCitedParaLink).length - 1 && ', '}
+                              </React.Fragment>
+                            ))}
+                            {')'}
+                          </>
+                        )}
+                      </li>
+                      
                       ))}
                     </ul>
                   </div>
@@ -271,26 +282,53 @@ return (
           )}
         </div>
         <div>
-          <h3>JUDGMENT</h3>
-          {judgmentData.JudgmentTexts.map((text) =>
-            text.JudgmentTextParas.map((para) => (
-              <div
-                key={para.judgementTextParaId}
-                ref={(el) => paraRefs.current[para.judgementTextParaNo] = el}
-              >
-                {isHtml(para.judgementTextParaText) ? (
-                  <div 
-                    dangerouslySetInnerHTML={{ __html: addInlineStylesToTable(para.judgementTextParaText) }} 
-                  />
-                ) : (
-                  <p>
-                    <strong style={{ visibility: 'hidden' }}>{para.judgementTextParaNo}</strong>
-                    {highlightText(para.judgementTextParaText, searchTerms)}
-                  </p>
-                )}
-              </div>
-            ))
-          )}
+        <h3>JUDGMENT</h3>
+{judgmentData.JudgmentTexts.map((text) =>
+  text.JudgmentTextParas.map((para) => (
+    <div
+      key={para.judgementTextParaId}
+      ref={(el) => (paraRefs.current[para.judgementTextParaNo] = el)}
+      style={{
+        position: "relative", // Positioning for potential custom elements
+        paddingLeft:
+          para.judgementTextParaType === "Quote"
+            ? "30px" // Indent for quotes
+            : para.judgementTextParaType === "SubPara"
+            ? "20px" // Indent for sub-paragraphs
+            : "0", // No indent for normal paragraphs
+        margin: "12px 0", // Space between paragraphs
+      }}
+    >
+      {isHtml(para.judgementTextParaText) ? (
+        <div
+          dangerouslySetInnerHTML={{
+            __html: addInlineStylesToTable(para.judgementTextParaText),
+          }}
+        />
+      ) : (
+        <p
+          style={{
+            fontStyle: para.judgementTextParaType === "Quote" ? "italic" : "normal",
+            margin: 0, // Remove additional margins from p
+            padding: 0, // Remove additional paddings from p
+            paddingLeft:
+              para.judgementTextParaType === "Quote"
+                ? "20px" // Indent for quotes
+                : para.judgementTextParaType === "SubPara"
+                ? "20px" // Indent for sub-paragraphs
+                : "0", // No indent for normal paragraphs
+          }}
+        >
+          {highlightText(para.judgementTextParaText, searchTerms)}
+        </p>
+      )}
+    </div>
+  ))
+)}
+
+
+
+
         </div>
       </>
     ) : (
