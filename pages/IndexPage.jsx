@@ -10,6 +10,7 @@ import StatusContent from "../components/StatusContent/StatusContent";
 import EqualsContent from "../components/EqualsContent/EqualsContent";
 import CitedContent from "../components/CitedContent/CitedContent";
 import NotesContent from "../components/NotesContent/NotesContent";
+import PDFManipulator from '../components/PDFManipulator';
 import styles from "./IndexPage.module.css";
 
 const IndexPage = () => {
@@ -27,6 +28,10 @@ const IndexPage = () => {
   const [fullCitation, setFullCitation] = useState('');
   const [isFullScreen, setIsFullScreen] = useState(false);
   const contentRef = useRef();
+  const [pdfUrl, setPdfUrl] = useState("");
+  const [isManipulating, setIsManipulating] = useState(false);
+  const [currentJudgmentCitation, setCurrentJudgmentCitation] = useState('');
+
 
   // Adding state for results, error, and judgment count
   const [results, setResults] = useState([]);
@@ -107,14 +112,64 @@ const IndexPage = () => {
   const handlePrint = () => {
     if (contentRef.current) {
       const printContents = contentRef.current.innerHTML;
-      const originalContents = document.body.innerHTML;
-
-      document.body.innerHTML = printContents;
-      window.print();
-      document.body.innerHTML = originalContents;
-      window.location.reload(); // Reload to restore the original content
+      const printWindow = window.open('', '', 'height=500,width=800');
+      
+      printWindow.document.write('<html><head><title>ALD Online</title>');
+      printWindow.document.write(`
+        <style>
+          /* Include your styles here or link to your stylesheet */
+          body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+          }
+          
+          /* Include the same print media query styles */
+          @media print {
+            .container {
+              height: auto;
+              width: 100%;
+              overflow: visible;
+              background-color: transparent;
+              border: none;
+              padding: 0;
+              margin: 0;
+              display: block;
+            }
+            
+            h2, h3 {
+              text-align: center;
+            }
+  
+            p, .justify-text {
+              text-align: justify;
+            }
+          }
+        </style>
+      `);
+  
+      printWindow.document.write('</head><body>');
+      printWindow.document.write(printContents);
+      printWindow.document.write('</body></html>');
+      
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      printWindow.onafterprint = () => {
+        printWindow.close();
+      };
     }
   };
+
+  const handleTruePrint = () => {
+    console.log('True Print clicked'); // Debug log
+    const fileName = '1997 ALD(Art) 1.pdf';
+    const url = `http://localhost:3000/pdfs/${fileName}`;
+    setPdfUrl(url);
+    setIsManipulating(true);
+  };
+  
+  
+  
 
   const handleResultClick = (id) => {
     setJudgmentId(id);
@@ -184,18 +239,39 @@ const IndexPage = () => {
     };
   }, []);
 
+useEffect(() => {
+  const storedCitation = localStorage.getItem('referredCitation');
+  if (storedCitation) {
+    setReferredCitation(storedCitation);
+    localStorage.removeItem('referredCitation'); // Delete the citation after usage
+  }
+}, []);
+ // Empty dependency array means this effect runs only once, after the initial render
+
+
+const handleClear = () => {
+  console.log('Clearing data...');
+  setJudgmentData(null); 
+  setCurrentJudgmentCitation("");
+  setResults([]);
+  setJudgmentCount(0);
+  setError(null);
+  setSearchTerms([]);
+};
 
   return (
     <div>
       <SubHeader judgmentData={judgmentData} onToggleFullScreen={handleToggleFullScreen} isFullScreen={isFullScreen} /> {/* Pass the toggle function */}
       <FrontDashboard
-        onItemSelect={handleContentChange}
-        onZoom={handleZoom}
-        onPrint={handlePrint}
-        judgmentCount={judgmentCount} // Pass the judgmentCount as a prop
-      />
-      {/* Remove input later */}
-      {/* Judgment ID Search */}
+  onItemSelect={handleContentChange}
+  onZoom={handleZoom}
+  onPrint={handlePrint}
+  onTruePrint={handleTruePrint}
+  judgmentCount={judgmentCount}
+/>
+
+            {isManipulating && <PDFManipulator pdfUrl={pdfUrl} />}
+
 
       {/* Search Results */}
       {searchResults.length > 0 && (
@@ -226,17 +302,21 @@ const IndexPage = () => {
           setSearchTerms={setSearchTerms} 
           fullCitation={referredCitation} 
           setFullCitation={setReferredCitation} 
+          onClear={handleClear}
         />
+
+
       )}<div 
           className={`${styles.scrollableText} ${isFullScreen ? styles.fullScreenText : ''}`} 
           ref={contentRef} 
           style={{ fontSize: `${fontSize}px` }}
         >          
-          {activeContent === "judgment" && <JudgmentContent judgmentData={judgmentData} searchTerms={searchTerms} setReferredCitation={setReferredCitation} />}
-          {activeContent === "headnotes" && <HeadnotesContent judgmentData={judgmentData} searchTerms={searchTerms} />}
-          {activeContent === "status" && <StatusContent judgmentData={judgmentData} />}
-          {activeContent === "equals" && <EqualsContent judgmentData={judgmentData} searchTerms={searchTerms} />}
-          {activeContent === "cited" && <CitedContent judgmentData={judgmentData} searchTerms={searchTerms} />}
+          {activeContent === "judgment" && <JudgmentContent judgmentData={results.length > 0 ? judgmentData : null} searchTerms={searchTerms} setReferredCitation={setReferredCitation} />}
+          {activeContent === "headnotes" && <HeadnotesContent judgmentData={results.length > 0 ? judgmentData : null} searchTerms={searchTerms} />}
+          {activeContent === "status" && <StatusContent judgmentData={results.length > 0 ? judgmentData : null}
+          setReferredCitation={setReferredCitation} />}
+          {activeContent === "equals" && <EqualsContent judgmentData={results.length > 0 ? judgmentData : null} searchTerms={searchTerms} />}
+          {activeContent === "cited" && <CitedContent judgmentData={results.length > 0 ? judgmentData : null} searchTerms={searchTerms} />}
           {activeContent === "notes" && <NotesContent />}
         </div>
         {showPageUpButton && (
@@ -244,9 +324,10 @@ const IndexPage = () => {
             ↑
           </button>
         )}
-        
+
       </div>
-      <RearDashboard results={results} onRowClick={handleRowClick} selectedRow={selectedRow} onSaveToPad={handleSaveToPad} judgmentCount={judgmentCount} />
+      <RearDashboard results={results} onRowClick={handleRowClick} selectedRow={selectedRow} onSaveToPad={handleSaveToPad} judgmentCount={judgmentCount}  currentJudgmentCitation={currentJudgmentCitation}
+        setCurrentJudgmentCitation={setCurrentJudgmentCitation} />
     </div>
   );
 };
