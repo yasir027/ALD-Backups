@@ -91,17 +91,17 @@ function PricingCard({
     switch (type.toLowerCase()) {
       case 'bronze':
         durationDays = 60;
-        priceValue = 99;
+        priceValue = 1;
         planName = 'Bronze Plan';
         break;
       case 'silver':
         durationDays = 130;
-        priceValue = 399;
+        priceValue = 1;
         planName = 'Silver Plan';
         break;
       case 'gold':
         durationDays = 360;
-        priceValue = 699;
+        priceValue = 1;
         planName = 'Gold Plan';
         break;
       default:
@@ -117,7 +117,7 @@ function PricingCard({
       planName,
       duration: durationDays,
       price: priceValue,
-      subscriptionStatus: 'pending',
+      subscriptionStatus:'pending',
       creationDate: creationDate.toISOString(),
       endingDate: deadline.toISOString(),
     };
@@ -159,7 +159,7 @@ function Price() {
       type: 'Bronze',
       title: 'Bronze Plan',
       description: '60 Days',
-      price: 99,
+      price: 1,
       recurrency: 0,
       mostPopular: false,
       data: ['Headnotes', 'Notes'],
@@ -169,8 +169,8 @@ function Price() {
       type: 'Silver',
       title: 'Silver Plan',
       description: '130 Days',
-      price: 399,
-      recurrency: 24.99,
+      price: 1,
+      recurrency: 24.1,
       mostPopular: false,
       data: ['100 Searches monthly', '10 Accounts'],
     },
@@ -179,8 +179,8 @@ function Price() {
       type: 'Gold',
       title: 'Gold Plan',
       description: '360 Days',
-      price: 699,
-      recurrency: 59.99,
+      price: 1,
+      recurrency: 59.1,
       mostPopular: true,
       data: ['500 Searches monthly', '20 Accounts', '24/7 Support'],
     },
