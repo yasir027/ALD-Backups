@@ -12,11 +12,19 @@ import CitedContent from "../components/CitedContent/CitedContent";
 import NotesContent from "../components/NotesContent/NotesContent";
 import PDFManipulator from '../components/PDFManipulator';
 import styles from "./IndexPage.module.css";
+import { useAuth } from './../services/AuthContext';
+
+//url navigation
+import { useNavigate } from 'react-router-dom'; // Import useNavigatez
+import { useLocation } from 'react-router-dom';
+
+
 
 const IndexPage = () => {
+  const { user } = useAuth();
   const [judgmentId, setJudgmentId] = useState('');
   const [judgmentData, setJudgmentData] = useState(null);
-  const [activeContent, setActiveContent] = useState("headnotes"); // Default to "headnotes"
+  const [activeContent, setActiveContent] = useState('headnotes'); // Default to "headnotes"
   const [fontSize, setFontSize] = useState(16); // Default font size in px
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -30,8 +38,15 @@ const IndexPage = () => {
   const contentRef = useRef();
   const [pdfUrl, setPdfUrl] = useState("");
   const [isManipulating, setIsManipulating] = useState(false);
+  const [printRequested, setPrintRequested] = useState(false);
   const [currentJudgmentCitation, setCurrentJudgmentCitation] = useState('');
-
+  const navigate = useNavigate();
+  const location = useLocation(); // Access the current location for URL parameters
+  const [judgmentCitation, setJudgmentCitation] = useState(''); // Use judgmentCitation state
+ //Url declarations
+  const queryParams = new URLSearchParams(location.search);
+  const contentFromUrl = queryParams.get('content');
+  const judgmentCitationFromUrl = queryParams.get('judgmentCitation');
 
   // Adding state for results, error, and judgment count
   const [results, setResults] = useState([]);
@@ -52,9 +67,58 @@ const IndexPage = () => {
     return formattedDate;
   };
 
+  useEffect(() => {
+    // Sync judgment data based on citation from URL
+    if (judgmentCitationFromUrl && judgmentCitationFromUrl !== judgmentCitation) {
+      const storedJudgmentData = sessionStorage.getItem(judgmentCitationFromUrl);
+  
+      if (storedJudgmentData) {
+        const parsedData = JSON.parse(storedJudgmentData);
+        setJudgmentCitation(parsedData.judgmentCitation);
+        setJudgmentData(parsedData);
+  
+        // Do not reset activeContent when data is found in sessionStorage
+        // Keep the previous state of activeContent
+        if (contentFromUrl === activeContent && parsedData[activeContent]) {
+          // Replace this with how your data is structured
+          setContentData(parsedData[activeContent]);
+        }
+      } else {
+        // If no judgment data found in sessionStorage, fetch it from referredCitation
+        setReferredCitation(judgmentCitationFromUrl);
+  
+        // Only when fetching from the referred citation, set activeContent to 'headnotes'
+        setActiveContent('headnotes');
+      }
+    }
+  }, [location, contentFromUrl, judgmentCitationFromUrl]); // Dependencies include location and URL parameter changes
+  
+  
+  
+  // Store judgmentData in sessionStorage and update URL
+  useEffect(() => {
+    if (judgmentData && judgmentData.judgmentCitation) {
+      const { judgmentCitation } = judgmentData;
+
+      // Store the entire judgmentData object in sessionStorage using judgmentCitation as the key
+      sessionStorage.setItem(judgmentCitation, JSON.stringify(judgmentData));
+
+      // Update the URL with the latest judgmentCitation and activeContent
+      navigate(`?content=${activeContent}&judgmentCitation=${judgmentCitation}`, { replace: true });
+    }
+  }, [judgmentData, activeContent, navigate]);
+
+
+  // Handle content change and update the URL
   const handleContentChange = (content) => {
-    setActiveContent(content);
+    if (!user && content !== 'headnotes') {
+      navigate('/auth');
+    } else if (content !== activeContent) {
+      setActiveContent(content);
+      navigate(`?content=${content}&judgmentCitation=${judgmentCitation}`, { replace: true });
+    }
   };
+
 
   const toOrdinal = (num) => {
     const suffixes = ["th", "st", "nd", "rd"];
@@ -109,6 +173,7 @@ const IndexPage = () => {
     setFontSize((prev) => (type === "plus" ? prev + 2 : prev - 2));
   };
 
+ 
   const handlePrint = () => {
     if (contentRef.current) {
       const printContents = contentRef.current.innerHTML;
@@ -116,38 +181,59 @@ const IndexPage = () => {
       
       printWindow.document.write('<html><head><title>ALD Online</title>');
       printWindow.document.write(`
-        <style>
-          /* Include your styles here or link to your stylesheet */
-          body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-          }
-          
-          /* Include the same print media query styles */
-          @media print {
-            .container {
-              height: auto;
-              width: 100%;
-              overflow: visible;
-              background-color: transparent;
-              border: none;
-              padding: 0;
-              margin: 0;
-              display: block;
-            }
-            
-            h2, h3 {
-              text-align: center;
-            }
-  
-            p, .justify-text {
-              text-align: justify;
-            }
-          }
-        </style>
+        <head>
+  <style>
+    /* Include your styles here or link to your stylesheet */
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    
+    /* Include the same print media query styles */
+    @media print {
+      body {
+        padding: 50px 0; /* Add top and bottom padding for each printed page */
+        margin: 0; /* Reset margin for print */
+      }
+
+      .container {
+        height: auto;
+        width: 100%;
+        overflow: visible;
+        background-color: transparent;
+        border: none;
+        padding: 0; /* No padding for the container */
+        margin: 0; /* No margin for the container */
+        display: block;
+      }
+      
+      h2, h3 {
+        text-align: center;
+      }
+
+      p, .justify-text {
+        text-align: justify;
+      }
+
+      .svg-icon {
+        display: block;
+        margin: 0 auto 20px auto;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+
       `);
   
       printWindow.document.write('</head><body>');
+  
+      // Add SVG icon at the top of the printed page
+      printWindow.document.write(`
+
+      `);
+  
+
       printWindow.document.write(printContents);
       printWindow.document.write('</body></html>');
       
@@ -159,14 +245,23 @@ const IndexPage = () => {
       };
     }
   };
+  
 
   const handleTruePrint = () => {
     console.log('True Print clicked'); // Debug log
-    const fileName = '1997 ALD(Art) 1.pdf';
-    const url = `http://localhost:3000/pdfs/${fileName}`;
+
+    // Assuming `judgmentData` is an object that contains `judgmentCitation`
+    const fileName = `${judgmentData.judgmentCitation}.pdf`;
+    
+    console.log("clicked file name" , fileName)
+    // Generate the URL based on the file name
+    const url = `http://localhost:3000/ALDpdfs/${fileName}`;
+    
+    // Set the PDF URL and manipulation state
     setPdfUrl(url);
     setIsManipulating(true);
-  };
+};
+
   
   
   
@@ -239,13 +334,15 @@ const IndexPage = () => {
     };
   }, []);
 
-useEffect(() => {
-  const storedCitation = localStorage.getItem('referredCitation');
-  if (storedCitation) {
-    setReferredCitation(storedCitation);
-    localStorage.removeItem('referredCitation'); // Delete the citation after usage
-  }
-}, []);
+  useEffect(() => {
+    const storedCitation = localStorage.getItem('referredCitation');
+    if (storedCitation) {
+      setReferredCitation(storedCitation);
+      localStorage.removeItem('referredCitation'); // Delete the citation after usage
+    }
+  }, []);
+
+  
  // Empty dependency array means this effect runs only once, after the initial render
 
 
@@ -263,14 +360,15 @@ const handleClear = () => {
     <div>
       <SubHeader judgmentData={judgmentData} onToggleFullScreen={handleToggleFullScreen} isFullScreen={isFullScreen} /> {/* Pass the toggle function */}
       <FrontDashboard
-  onItemSelect={handleContentChange}
-  onZoom={handleZoom}
-  onPrint={handlePrint}
-  onTruePrint={handleTruePrint}
-  judgmentCount={judgmentCount}
-/>
+        activeContent={activeContent}
+        onItemSelect={handleContentChange}
+        onZoom={handleZoom}
+        onPrint={handlePrint}
+        onTruePrint={handleTruePrint}
+        judgmentCount={judgmentCount}
+      />
 
-            {isManipulating && <PDFManipulator pdfUrl={pdfUrl} />}
+      {isManipulating && <PDFManipulator pdfUrl={pdfUrl} />}    
 
 
       {/* Search Results */}
@@ -306,25 +404,50 @@ const handleClear = () => {
         />
 
 
-      )}<div 
-          className={`${styles.scrollableText} ${isFullScreen ? styles.fullScreenText : ''}`} 
-          ref={contentRef} 
-          style={{ fontSize: `${fontSize}px` }}
-        >          
-          {activeContent === "judgment" && <JudgmentContent judgmentData={results.length > 0 ? judgmentData : null} searchTerms={searchTerms} setReferredCitation={setReferredCitation} />}
-          {activeContent === "headnotes" && <HeadnotesContent judgmentData={results.length > 0 ? judgmentData : null} searchTerms={searchTerms} />}
-          {activeContent === "status" && <StatusContent judgmentData={results.length > 0 ? judgmentData : null}
-          setReferredCitation={setReferredCitation} />}
-          {activeContent === "equals" && <EqualsContent judgmentData={results.length > 0 ? judgmentData : null} searchTerms={searchTerms} />}
-          {activeContent === "cited" && <CitedContent judgmentData={results.length > 0 ? judgmentData : null} searchTerms={searchTerms} />}
-          {activeContent === "notes" && <NotesContent />}
-        </div>
-        {showPageUpButton && (
-          <button className={styles.pageUpButton} onClick={handlePageUp}>
-            ↑
-          </button>
-        )}
-
+      )}<div
+      className={`${styles.scrollableText} ${isFullScreen ? styles.fullScreenText : ''}`} 
+      ref={contentRef} 
+      style={{ fontSize: `${fontSize}px` }}
+    >
+      {activeContent === "judgment" && (
+        <JudgmentContent
+          judgmentData={judgmentData || null} // Pass judgmentData or null if it's unavailable
+          searchTerms={searchTerms}
+          setReferredCitation={setReferredCitation}
+        />
+      )}
+      {activeContent === "headnotes" && (
+        <HeadnotesContent
+          judgmentData={judgmentData || null} // Pass judgmentData or null
+          searchTerms={searchTerms}
+        />
+      )}
+      {activeContent === "status" && (
+        <StatusContent
+          judgmentData={judgmentData || null} // Pass judgmentData or null
+          setReferredCitation={setReferredCitation}
+        />
+      )}
+      {activeContent === "equals" && (
+        <EqualsContent
+          judgmentData={judgmentData || null} // Pass judgmentData or null
+          searchTerms={searchTerms}
+        />
+      )}
+      {activeContent === "cited" && (
+        <CitedContent
+          judgmentData={judgmentData || null} // Pass judgmentData or null
+          searchTerms={searchTerms}
+        />
+      )}
+      {activeContent === "notes" && <NotesContent />}
+    </div>
+    
+    {showPageUpButton && (
+      <button className={styles.pageUpButton} onClick={handlePageUp}>
+        ↑
+      </button>
+    )}
       </div>
       <RearDashboard results={results} onRowClick={handleRowClick} selectedRow={selectedRow} onSaveToPad={handleSaveToPad} judgmentCount={judgmentCount}  currentJudgmentCitation={currentJudgmentCitation}
         setCurrentJudgmentCitation={setCurrentJudgmentCitation} />
