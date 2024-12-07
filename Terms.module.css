@@ -1,0 +1,75 @@
+/* Container for the entire page */
+.privacy-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 40px;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    animation: fadeIn 0.8s ease-in;
+    margin-top:12px;
+    margin-bottom: 12px;
+  }
+  /* Title Styling */
+  h1 {
+    text-align: center;
+    font-family: 'Abhaya Libre', serif;
+    font-size: 32px;
+    color: #333;
+    margin-bottom: 30px;
+  }
+  
+  /* Section Styling */
+  section {
+    background-color: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+  }
+
+  
+  /* Subheading for sections */
+  h2 {
+    color: #444;
+    font-family: 'Abhaya Libre', serif;
+    font-size: 26px;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-weight: bold;
+  }
+  
+  /* Paragraph styling */
+  p {
+    font-family: 'Abhaya Libre', serif;
+    font-size: 18px;
+    color: #555;
+    line-height: 1.8;
+    margin-bottom: 20px;
+    text-align: justify;
+  }
+  
+  /* Add a footer disclaimer with a lighter color */
+  footer {
+    text-align: center;
+    font-size: 14px;
+    color: #888;
+    margin-top: 40px;
+  }
+  
+  /* Small text inside paragraphs */
+  small {
+    font-size: 14px;
+    color: #888;
+    display: block;
+    margin-top: 5px;
+  }
+  
+  /* Animation for smooth appearance */
+  @keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+  
