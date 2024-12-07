@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import styles from './Billing.module.css';
 import { useNavigate, useLocation } from 'react-router-dom';
+import Razorpay from 'razorpay'; // Import Razorpay SDK
 import { db } from '../../services/firebaseConfig';
 import { doc, setDoc } from 'firebase/firestore';
 import { useAuth } from '../../services/AuthContext'; 
 import LoginPageImage from '../../assets/LoginPage.png';
+import { createOrder, initiatePayment } from '../../services/razorpay'; // Update path as needed
+import { getFirestore, getDoc } from 'firebase/firestore'; // Import Firebase Firestore
+
+
 
 const stateCityDistrictMap = {
   "Andhra Pradesh": {
@@ -126,6 +131,10 @@ const BillingForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const subscriptionId = location.state?.subscriptionId || '';
+  const [price, setPrice] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+
 
   const [billingData, setBillingData] = useState({
     firstName: '',
@@ -146,6 +155,8 @@ const BillingForm = () => {
 
   const [cities, setCities] = useState([]);
   const [districts, setDistricts] = useState([]);
+
+
 
   useEffect(() => {
     setBillingData((prevData) => ({ ...prevData, subscriptionId }));
@@ -197,6 +208,143 @@ const BillingForm = () => {
     const { name, value } = e.target;
     setBillingData((prev) => ({ ...prev, [name]: value }));
   };
+
+  //RazorPay
+
+// Fetch subscription price from Firestore
+useEffect(() => {
+  const fetchPrice = async () => {
+      if (!subscriptionId) {
+          setLoading(false);
+          return;
+      }
+
+      try {
+          const db = getFirestore(); // Initialize Firestore
+          const subscriptionRef = doc(db, 'subscriptions', subscriptionId); // Reference to subscription document
+          const subscriptionSnap = await getDoc(subscriptionRef);
+
+          if (subscriptionSnap.exists()) {
+              const data = subscriptionSnap.data();
+              setPrice(data.price); // Set the price from Firestore
+          } else {
+              console.error('No such subscription!');
+              setPrice(0);
+          }
+      } catch (error) {
+          console.error('Error fetching subscription price:', error);
+          setPrice(0);
+      } finally {
+          setLoading(false);
+      }
+  };
+
+  fetchPrice();
+}, [subscriptionId]);
+
+
+
+
+const handlePayment = async () => {
+  if (price <= 0) {
+      alert('Invalid subscription or price not available.');
+      return;
+  }
+
+  try {
+      // Step 1: Call backend to create an order
+      const response = await fetch('http://localhost:3000/api/payment/create-order', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+              amount: price * 100, // Convert to paisa
+              currency: 'INR',
+              receipt: `receipt_${subscriptionId}`,
+          }),
+      });
+
+      if (!response.ok) {
+          console.error('Failed to create order:', response.status, response.statusText);
+          alert('Failed to create Razorpay order. Please try again.');
+          return;
+      }
+
+      const data = await response.json();
+
+      if (!data || !data.success || !data.orderId) {
+          console.error('Invalid response from order creation:', data);
+          alert('Failed to create Razorpay order. Please try again.');
+          return;
+      }
+
+      // Step 2: Open Razorpay payment interface
+      const options = {
+          key: 'rzp_test_1wSYUGMK0YWQFf', // Replace with your Razorpay Key ID
+          amount: price * 100, // Amount in paisa
+          currency: 'INR',
+          name: 'ALD Online',
+          description: `Subscription: ${subscriptionId}`,
+          order_id: data.orderId, // Order ID from backend
+          handler: async (response) => {
+              try {
+                  // Step 3: Verify the payment
+                  const verifyResponse = await fetch('http://localhost:3000/api/payment/verify-payment', {
+                      method: 'POST',
+                      headers: {
+                          'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                          razorpay_order_id: response.razorpay_order_id,
+                          razorpay_payment_id: response.razorpay_payment_id,
+                          razorpay_signature: response.razorpay_signature,
+                      }),
+                  });
+
+                  if (!verifyResponse.ok) {
+                      console.error('Payment verification failed:', verifyResponse.status, verifyResponse.statusText);
+                      alert('Payment verification failed. Please contact support.');
+                      return;
+                  }
+
+                  const verifyData = await verifyResponse.json();
+
+                  if (verifyData.success) {
+                      alert('Payment successful!');
+                      // TODO: Handle successful payment (e.g., update subscription status)
+                  } else {
+                      console.error('Payment verification response:', verifyData);
+                      alert('Payment verification failed.');
+                  }
+              } catch (verifyError) {
+                  console.error('Error verifying payment:', verifyError);
+                  alert('An error occurred during payment verification. Please try again.');
+              }
+          },
+          prefill: {
+              name: 'Your Name', // Replace with actual customer name
+              email: 'your.email@example.com', // Replace with actual customer email
+              contact: '9999999999', // Replace with actual customer contact number
+          },
+          theme: {
+              color: '#3399cc', // Customize Razorpay UI color
+          },
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+  } catch (error) {
+      console.error('Error during payment:', error);
+      alert('An error occurred while processing the payment. Please try again.');
+  }
+};
+
+if (loading) {
+  return <div>Loading subscription details...</div>;
+}
+
+
 
   return (
     <div 
@@ -343,11 +491,26 @@ const BillingForm = () => {
               />
               Online
             </label>
+            <button
+              onClick={handlePayment}
+              style={{
+                  padding: '10px 20px',
+                  fontSize: '16px',
+                  backgroundColor: '#3399cc',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+              }}
+            >
+                        Pay ₹{price}
+                    </button>
           </div>
 
           <button type="submit" className={styles.submitButton}>
             Submit Billing Info
           </button>
+          
         </form>
       </div>
     </div>
