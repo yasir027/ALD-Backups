@@ -11,8 +11,14 @@ import EqualsContent from "../components/EqualsContent/EqualsContent";
 import CitedContent from "../components/CitedContent/CitedContent";
 import NotesContent from "../components/NotesContent/NotesContent";
 import styles from "./IndexPage.module.css";
+import { useAuth } from './../services/AuthContext';
+//url navigation
+import { useNavigate } from 'react-router-dom'; // Import useNavigatez
+import { useLocation } from 'react-router-dom';
+
 
 const CaseFinder = () => {
+  const { user } = useAuth();
   const [judgmentId, setJudgmentId] = useState('');
   const [judgmentData, setJudgmentData] = useState(null);
   const [activeContent, setActiveContent] = useState("headnotes");
@@ -25,6 +31,14 @@ const CaseFinder = () => {
   const [referredCitation, setReferredCitation] = useState(null);
   const [fullCitation, setFullCitation] = useState('');
   const [isFullScreen, setIsFullScreen] = useState(false);// state for full screen
+  const [currentJudgmentCitation, setCurrentJudgmentCitation] = useState('');
+  const navigate = useNavigate();
+  const location = useLocation(); // Access the current location for URL parameters
+  const [judgmentCitation, setJudgmentCitation] = useState(''); // Use judgmentCitation state
+ //Url declarations
+  const queryParams = new URLSearchParams(location.search);
+  const contentFromUrl = queryParams.get('content');
+  const judgmentCitationFromUrl = queryParams.get('judgmentCitation');
 
   const contentRef = useRef();
 
@@ -47,9 +61,58 @@ const CaseFinder = () => {
     return formattedDate;
   };
 
+  useEffect(() => {
+    // Sync judgment data based on citation from URL
+    if (judgmentCitationFromUrl && judgmentCitationFromUrl !== judgmentCitation) {
+      const storedJudgmentData = sessionStorage.getItem(judgmentCitationFromUrl);
+  
+      if (storedJudgmentData) {
+        const parsedData = JSON.parse(storedJudgmentData);
+        setJudgmentCitation(parsedData.judgmentCitation);
+        setJudgmentData(parsedData);
+  
+        // Do not reset activeContent when data is found in sessionStorage
+        // Keep the previous state of activeContent
+        if (contentFromUrl === activeContent && parsedData[activeContent]) {
+          // Replace this with how your data is structured
+          setContentData(parsedData[activeContent]);
+        }
+      } else {
+        // If no judgment data found in sessionStorage, fetch it from referredCitation
+        setReferredCitation(judgmentCitationFromUrl);
+  
+        // Only when fetching from the referred citation, set activeContent to 'headnotes'
+        setActiveContent('headnotes');
+      }
+    }
+  }, [location, contentFromUrl, judgmentCitationFromUrl]); // Dependencies include location and URL parameter changes
+  
+  
+  
+  // Store judgmentData in sessionStorage and update URL
+  useEffect(() => {
+    if (judgmentData && judgmentData.judgmentCitation) {
+      const { judgmentCitation } = judgmentData;
+
+      // Store the entire judgmentData object in sessionStorage using judgmentCitation as the key
+      sessionStorage.setItem(judgmentCitation, JSON.stringify(judgmentData));
+
+      // Update the URL with the latest judgmentCitation and activeContent
+      navigate(`?content=${activeContent}&judgmentCitation=${judgmentCitation}`, { replace: true });
+    }
+  }, [judgmentData, activeContent, navigate]);
+
+
+  // Handle content change and update the URL
   const handleContentChange = (content) => {
-    setActiveContent(content);
+    if (!user && content !== 'headnotes') {
+      navigate('/auth');
+    } else if (content !== activeContent) {
+      setActiveContent(content);
+      navigate(`?content=${content}&judgmentCitation=${judgmentCitation}`, { replace: true });
+    }
   };
+
 
   const toOrdinal = (num) => {
     const suffixes = ["th", "st", "nd", "rd"];
@@ -182,6 +245,16 @@ const CaseFinder = () => {
     };
   }, []);
 
+  const handleClear = () => {
+    console.log('Clearing data...');
+    setJudgmentData(null); 
+    setCurrentJudgmentCitation("");
+    setResults([]);
+    setJudgmentCount(0);
+    setError(null);
+    setSearchTerms([]);
+  };
+
 
   return (
     <div>
@@ -224,7 +297,8 @@ const CaseFinder = () => {
           setSearchTerms={setSearchTerms} 
           fullCitation={referredCitation} 
           setFullCitation={setReferredCitation}
-         
+          onClear={handleClear}
+
         />
       )}<div 
       className={`${styles.scrollableText} ${isFullScreen ? styles.fullScreenText : ''}`} 
@@ -232,10 +306,10 @@ const CaseFinder = () => {
       style={{ fontSize: `${fontSize}px` }}
     > 
           {activeContent === "judgment" && <JudgmentContent judgmentData={judgmentData} searchTerms={searchTerms} setReferredCitation={setReferredCitation} />}
-          {activeContent === "headnotes" && <HeadnotesContent judgmentData={judgmentData} />}
-          {activeContent === "status" && <StatusContent judgmentData={judgmentData} />}
-          {activeContent === "equals" && <EqualsContent judgmentData={judgmentData} />}
-          {activeContent === "cited" && <CitedContent judgmentData={judgmentData} />}
+          {activeContent === "headnotes" && <HeadnotesContent judgmentData={judgmentData} searchTerms={searchTerms} />}
+          {activeContent === "status" && <StatusContent judgmentData={judgmentData} searchTerms={searchTerms}/>}
+          {activeContent === "equals" && <EqualsContent judgmentData={judgmentData} searchTerms={searchTerms} />}
+          {activeContent === "cited" && <CitedContent judgmentData={judgmentData} searchTerms={searchTerms} />}
           {activeContent === "notes" && <NotesContent />}
         </div>
         {showPageUpButton && (
@@ -245,8 +319,8 @@ const CaseFinder = () => {
         )}
         
       </div>
-      <RearDashboard results={results} onRowClick={handleRowClick} selectedRow={selectedRow} onSaveToPad={handleSaveToPad} judgmentCount={judgmentCount} />
-    </div>
+      <RearDashboard results={results} onRowClick={handleRowClick} selectedRow={selectedRow} onSaveToPad={handleSaveToPad} judgmentCount={judgmentCount}  currentJudgmentCitation={currentJudgmentCitation}
+        setCurrentJudgmentCitation={setCurrentJudgmentCitation} />    </div>
   );
 };
 
