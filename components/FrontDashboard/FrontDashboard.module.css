@@ -2,9 +2,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-bottom: 20px; /* Remove padding */
+  padding-bottom: 10px; /* Remove padding */
   margin: 0; /* Remove margin */
-  font-size: 16px;
+  font-size: 15px;
   color: #000;
   font-weight: 400;
   margin-left: 130px;
@@ -20,36 +20,23 @@
   padding: 2px;
 }
 
-.textButton {
-  background-color: #fff; /* Default background color */
-  color: #000; /* Default text color */
-  font-weight: 500; /* Increased font weight for a more button-like feel */
-  border: none; /* Remove default border */
-  border-left: 0px solid #E34A3E; /* Vertical border between middle buttons */
-  border-right: 1px solid #E34A3E; /* Vertical border between middle buttons */
-  border-bottom: 2px solid #E34A3E; /* Red bottom border */
-  padding: 12px 24px; /* Adjust padding for button size */
-  cursor: pointer;
-  transition: background-color 0.2s, color 0.3s, box-shadow 0.3s, transform 0.2s; /* Smooth transitions */
-  font-family: 'Arial', sans-serif; /* Example font */
 
-  /* Add box shadow for depth */
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-}
+
+
 
 .textButton {
-  background-color: #fff; /* Default background color */
+  background-color: #f6f6f6; /* Default background color */
   color: #000; /* Default text color */
-  font-weight: 500; /* Increased font weight for a more button-like feel */
-  font-size: medium;
+  font-weight: 550; /* Increased font weight for a more button-like feel */
+  font-size: 14px;
   border: none; /* Remove default border */
-  border-left: 0px solid #E34A3E; /* Vertical border between middle buttons */
-  border-right: 1px solid #E34A3E; /* Vertical border between middle buttons */
-  border-bottom: 1px solid #E34A3E; /* Red bottom border */
-  padding: 12px 24px; /* Adjust padding for button size */
+  border-left: 0px solid #949494; /* Vertical border between middle buttons */
+  border-right: 1px solid #949494; /* Vertical border between middle buttons */
+  border-bottom: 1px solid #949494; /* Red bottom border */
+  padding: 10px 14px; /* Adjust padding for button size */
   cursor: pointer;
   transition: background-color 0.3s, color 0.3s, box-shadow 0.3s, transform 0.2s; /* Smooth transitions */
-  font-family: 'Abhaya Libre';
+  font-family: 'Palatino';
 
   /* Add box shadow for depth */
   box-shadow: 0 0px 5px rgba(0, 0, 0, 0.3);
@@ -58,13 +45,13 @@
 .textButton:first-child {
   border-top-left-radius: 0px; /* Remove top-left corner rounding */
   border-bottom-left-radius: 25px; /* Rounded bottom-left corner for the first button */
-  border-left: 2px solid #E34A3E; /* Vertical border between middle buttons */
+  border-left: 2px solid #949494; /* Vertical border between middle buttons */
 }
 
 .textButton:last-child {
   border-top-right-radius: 0px; /* Remove top-right corner rounding */
   border-bottom-right-radius: 25px; /* Rounded bottom-right corner for the last button */
-  border-right: 2px solid #E34A3E; /* Vertical border between middle buttons */
+  border-right: 2px solid #949494; /* Vertical border between middle buttons */
 }
 
 .textButton:not(:first-child):not(:last-child) {
@@ -73,7 +60,7 @@
 
 .textButton:hover {
   background-color: #f0f0f0; /* Lighten background on hover */
-  transform: translateX(1px); /* Slight horizontal movement */
+  transform: translateY(1px); /* Slight vertical movement */
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); /* Reduce shadow to make it look pressed */
 }
 
@@ -90,3 +77,51 @@
   align-items: center;
   position: relative;
 }
+
+
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  width: 400px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.modalContent h2 {
+  margin-top: 0;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.modalActions button {
+  padding: 10px 20px;
+  border: none;
+  background-color: #007bff;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.modalActions button:hover {
+  background-color: #0056b3;
+}
+
+
