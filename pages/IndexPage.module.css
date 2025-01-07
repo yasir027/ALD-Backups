@@ -16,44 +16,50 @@ main {
 }
 
 .scrollableText {
-    height: 71vh;
-    font-size: 12px;
-    overflow-y: auto;
-    background-color: #ffffffd9; /* Semi-transparent white background */
-    display: flex;
-    flex-direction: column;
-    text-align: justify;
-    width: 1050px; /* Fixed width, adjust as needed */
-    margin: 0 auto; /* Centering the block horizontally if inside a wider container */
-    border: 1px solid rgba(0, 0, 0, 0.2); /* Light border */
-    border-radius: 30px;
-    padding: 15px;
-    position: relative; /* Ensure relative positioning for absolute child */
-
-    /* Hide scrollbar for WebKit browsers by default */
-    &::-webkit-scrollbar {
-        width: 7px;
-        background-color: transparent; /* Makes scrollbar background transparent */
-    }
-
-    &::-webkit-scrollbar-thumb {
-        background-color: transparent; /* Initially make thumb transparent */
-        border-radius: 10px; /* Rounded corners for the thumb */
-    }
-
-    &:hover::-webkit-scrollbar-thumb {
-        background-color: rgba(145, 145, 145, 0.5); /* Visible on hover with transparency */
-    }
-
-    h3 {
-        text-align: justify;
-        text-align: center;
-    }
-
-    h2 {
-        text-align: center;
-    }
+  height: 65vh;
+  font-size: 10px;
+  line-height: 1.5;
+  overflow-y: auto;
+  background-color: #fdfdfd;
+  display: flex;
+  flex-direction: column;
+  text-align: justify;
+  width: 1080px;
+  margin: 0 auto;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 30px;
+  padding: 15px;
+  position: relative;
+  box-shadow: 
+    inset -3px -3px 5px rgba(142, 142, 142, 0.6),
+    inset 3px 3px 5px rgba(0, 0, 0, 0.1),
+    5px 5px 15px rgba(231, 231, 231, 0.1), 
+    -5px -5px 4px rgba(255, 255, 255, 0.8);
+  transition: box-shadow 0.3s ease, background-color 0.3s ease;
+  user-select: none; /* Allow text selection - text */
 }
+
+
+  
+  /* Scrollbar styling */
+  .scrollableText::-webkit-scrollbar {
+    width: 7px;
+    background-color: transparent; /* Transparent background */
+  }
+  
+  .scrollableText::-webkit-scrollbar-thumb {
+    background-color: transparent; /* Initially transparent */
+    border-radius: 10px; /* Rounded corners for the thumb */
+  }
+  
+  .scrollableText:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.5); /* Visible thumb on hover */
+  }
+  
+  h3, h2 {
+    text-align: center;
+  }
+  
 
 .sideNscroll {
     display: flex;
@@ -104,8 +110,7 @@ main {
     background-color: #fff; /* White background for content */
     border: 1px solid #d12300;
     box-shadow: 0px 0px 10px #d12300; 
-
-
+    
   }
   
   .fullScreenButton {
@@ -118,6 +123,13 @@ main {
     padding: 10px;
     cursor: pointer;
     z-index: 10000; /* Make sure button is above other content */
+  }
+
+  .spinnercontainer{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 71vh;
   }
   
   
