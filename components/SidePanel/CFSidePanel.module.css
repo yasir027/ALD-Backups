@@ -4,45 +4,48 @@
   flex-direction: column;
   align-items: center;
   position: relative;
-  width: 275px;
-  margin-left: -29px;
+  width: 305px;
 }
 
 .subitem {
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  line-height: 38px;
+  font-family: 'Palatino';
+  font-size: 15px;
+  line-height: 25px;
   font-weight: 600;
-  color: #B22525;
+  color: #E34A3E;
   position: relative;
-  width: 70%;
-  height: 25px;
+  height: 25x;
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 10px;
-  margin-left: 25px;
+  margin-top: 6px;
   z-index: 2;
-
-  button{
+  button {
     border: none;
     border-radius: 50%; /* Make the button circular */
-    background-color: #000000;
+    background-color: #E34A3E; /* Red background color */
     color: white;
-    width: 13; /* Adjust size as needed */
-    height: 13; /* Adjust size as needed */
+    width: 20px; /* Adjust size as needed */
+    height: 20px; /* Adjust size as needed */
     font-size: 15px; /* Increase font size */
     cursor: pointer;
     display: flex;
     justify-content: center;
     align-items: center;
-    transition: background-color 0.3s; /* Smooth transition for background color change */
-    margin-left: 2px; 
+    transition: background-color 0.3s, box-shadow 0.3s; /* Smooth transition for background color and shadow */
+    margin-left: 8px;
+  
+    /* Neumorphic shadow for normal state */
+    box-shadow: 4px 4px 8px rgba(255, 255, 255, 0.7), -4px -4px 8px rgba(0, 0, 0, 0.2); /* White highlight and dark shadow */
+  }
+  
+  button:hover {
+    background-color: #C9332D; /* Slightly darker red for hover */
     
+    /* Neumorphic hover shadow for depth */
+    box-shadow: 4px 4px 8px rgba(255, 255, 255, 0.9), -4px -4px 8px rgba(0, 0, 0, 0.3); /* Enhanced shadows on hover */
   }
-  button:hover{
-    background-color: #E34A3E;
-  }
+  
 }
 
 /* Styles for the main container */
@@ -56,104 +59,103 @@
 }
 
 .item {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Palatino';
   font-size: 14px;
   line-height: 38px;
   font-weight: 600;
   color: #B22525;
   position: relative;
   width: 75%;
-  height: 25px;
+  height: 5px;
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 10px;
-  margin-left: 25px;
 }
-
-/* Styles for rectangles */
-
-
-/*styles for advancedsearch rectangle*/
-.rectangleadvancedsearch{
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  border: 1px solid #000000;
-  z-index: -2;
-  border-bottom: none;
-  border-radius: 20px;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-  height: 250px;
-  margin-left: -3px;
-}
-
-
-
 
 /* Styles for search input */
 .searchInput {
   position: relative;
   top: 0;
-  left: px;
-  width: 85%;
-  height: 100%;
-  border: 1px solid #000000;
+  left: 0;
+  width: 95%; /* Updated width */
+  height: 110%;
+  padding: 8px; /* Added padding */
+  box-sizing: border-box; /* Ensures padding is included in the total width and height */
+  background: #ffff; /* White background */
+  border-radius: 15px; /* Rounded corners */
+  border: none; /* No border */
+  box-shadow: inset 2px 2px 5px #d1d1d1, inset -2px -2px 5px #ffffff; /* Neomorphism effect */
+  color: #333; /* Dark text color */
+  font-size: 14px; /* Font size */
+  outline: none; /* Removes the outline when focused */
 }
+
 
 /* Styles for sidebar */
 .sidebar {
-  background-color: white;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 200px;
+  background: #e9e9e9;
+  border-radius: 20px;
+  border: 2px solid #e9e9e9; /* Light gray border */
+  box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.15), -3px -3px 3px rgba(255, 255, 255, 0.6);
+  width: 238px;
+  padding: 12px;
+  margin-left: 10px;
+  display: flex; /* Use flexbox for centering the items */
+  flex-direction: column; /* Stack items vertically */
+  justify-content: center; /* Center items vertically */
+  align-items: center; /* Center items horizontally */
+  transition: all 0.3s ease;
+} 
 
-  border-radius: 0 20px 20px 0;
-  border-left: none;
-  border-right: 1px solid #e34a3e;
-  border-top: 1px solid #e34a3e;
-  border-bottom: 1px solid #e34a3e;
-  margin-left: 55px;
-}
-
-
-
+/* Neumorphic combinedResults container with darker 3D effect */
 .combinedResults {
-  border: 1px solid #000000; /* Black border */
+  border: 1px solid #d1d1d1; /* Light border for neumorphism */
   margin-bottom: 10px; /* Adjust as needed */
- height: 200px;
-   /* Specified height for the container */
+  height: 100px; /* Specified height for the container */
   overflow-y: scroll; /* Enable vertical scrolling if container overflows */
   padding: 10px; /* Padding around the content */
-  width: 164px;
-  margin-left: 4px;
-  margin-top:10px;
+  width: 210px;
+  margin-left: 0px;
+  margin-top: 10px;
+
+  background: #e0e0e0; /* Soft background for neumorphism */
+  border-radius: 10px; /* Rounded corners */
+  
+  /* Darker shadows for better contrast on grey background */
+  box-shadow: 6px 6px 12px rgba(0, 0, 0, 0.3), -6px -6px 12px rgba(255, 255, 255, 0.8); /* Stronger shadow for prominence */
+  
   &::-webkit-scrollbar {
     width: 7px;
     background-color: transparent; /* Makes scrollbar background transparent */
-}
+  }
 
-&::-webkit-scrollbar-thumb {
+  &::-webkit-scrollbar-thumb {
     background-color: transparent; /* Initially make thumb transparent */
     border-radius: 10px; /* Rounded corners for the thumb */
-}
+  }
 
-&:hover::-webkit-scrollbar-thumb {
+  &:hover::-webkit-scrollbar-thumb {
     background-color: rgba(145, 145, 145, 0.5); /* Visible on hover with transparency */
-}
+  }
 }
 
+/* Neumorphic style for the heading inside combinedResults */
 .combinedResults h3 {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Palatino';
   font-weight: 600;
-  color: #B22525;
+  color: #B22525; /* Subtle red color for emphasis */
   text-align: center;
   margin-bottom: 10px;
+  
+  /* Neumorphism effect for the heading */
+  background: #ffffff; /* Soft background */
+  border-radius: 10px; /* Rounded corners */
+  padding: 5px 10px; /* Add some padding to make the header feel "raised" */
+  
+  /* Darker shadow for more prominent 3D effect */
+  box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.3), -4px -4px 8px rgba(255, 255, 255, 0.8); /* Stronger shadow */
 }
+
 
 /* SidePanel.module.css */
 
@@ -167,25 +169,34 @@
   margin-right: 5px; /* Adjust margin between items */
   margin-bottom: 5px; /* Adjust margin between lines */
   position: relative; /* Enable relative positioning for sticky button */
+  border-radius: 10px;
 }
 
 .addedItem button {
   border: none;
-  border-radius: 50%; /* Make the button circular */
-  background-color: #000000;
-  color: white;
-  width: 13; /* Adjust size as needed */
-  height: 13; /* Adjust size as needed */
-  font-size: 15px; /* Increase font size */
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  transition: background-color 0.3s; /* Smooth transition for background color change */
-  margin-left: 2px;
+    border-radius: 50%; /* Make the button circular */
+    background-color: #E34A3E; /* Red background color */
+    color: white;
+    width: 20px; /* Adjust size as needed */
+    height: 20px; /* Adjust size as needed */
+    font-size: 20px; /* Increase font size */
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.3s, box-shadow 0.3s; /* Smooth transition for background color and shadow */
+    margin-left: 8px;
+  
+    /* Neumorphic shadow for normal state */
+    box-shadow: 4px 4px 8px rgba(255, 255, 255, 0.7), -4px -4px 8px rgba(0, 0, 0, 0.2); /* White highlight and dark shadow */
+  
 }
 .addedItem button:hover{
-  background-color: #E34A3E;
+  background-color: #C9332D; /* Slightly darker red for hover */
+    
+    /* Neumorphic hover shadow for depth */
+    box-shadow: 4px 4px 8px rgba(255, 255, 255, 0.9), -4px -4px 8px rgba(0, 0, 0, 0.3); /* Enhanced shadows on hover */
+  
 }
 
 .filterButton{
@@ -194,12 +205,11 @@
   cursor: pointer;
 }
 .filtercontainer{
-  border: 1px solid black;
   border-bottom: none;
   border-radius: 20px 20px 0px 0px;
   width: 180px;
   display: flex;
-  margin-right: 20px;
+  margin-right: 0px;
   margin-bottom: 20px;
   margin-top: 20px;
   padding-bottom: 5px;
@@ -207,6 +217,8 @@
   z-index: 100;
   
 align-items: center;
+
+
 button{
   background-color: transparent;
   color:#B22525;
@@ -216,47 +228,39 @@ button:hover{
   background-color: transparent;
 }
 }
-.button {
+
+.BottomItems {
+  font-family: 'Palatino';
+  font-size: 16px;
+  line-height: 35px;
+  font-weight: 600;
+  color: #E34A3E;
+  position: relative;
+  height: 25px;
   display: flex;
-  justify-content: flex-end; /* Align button to the right */
-  margin-top: 20px; /* Add some spacing */
-  margin-bottom: 15px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 5px;
+  z-index: 2;
+  gap: 10px;
 }
-.button button {
-  background-color: #000000; /* Black background */
-  color: white;
+
+.Searchbutton,
+.Clearbutton {
+  background: #E34A3E; /* Red background */
   border: none;
-  padding: 5px 15px; /* Reduced padding */
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 14px; /* Reduced font size */
-  margin-left: 5px; /* Added margin between buttons */
+  color: #ffffff; /* White font */
+  padding: 5px 15px;
+  font-size: 14px;
+  border-radius: 10px;
+  box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.2), -4px -4px 8px rgba(255, 255, 255, 0.3); /* Neomorphic outer shadow */
   cursor: pointer;
-  border-radius: 6px; /* Slightly less rounded corners */
-  transition: background-color 0.3s, color 0.3s;
+  transition: all 0.3s ease;
+  
 }
 
-.button button:hover {
-  background-color: #E34A3E; /* Red on hover */
-}
-
-.clearButton {
-  background-color: #f8f9fa; /* Light gray */
-  border: 1px solid #adb5bd; /* Gray border */
-  color: #495057; /* Dark gray text */
-  padding: 8px; /* Reduced padding */
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 14px; /* Reduced font size */
-  margin-left: 5px; /* Added margin between buttons */
-  cursor: pointer;
-  border-radius: 6px; /* Slightly less rounded corners */
-  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
-}
-
-.clearButton:hover {
-  background-color: #e9ecef; /* Lighter gray on hover */
-  border-color: #868e96; /* Darker gray border on hover */
+.Searchbutton:hover,
+.Clearbutton:hover{
+  box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.4), inset -4px -4px 8px rgba(255, 255, 255, 0.4); /* Inset shadows on hover */
+  transform: translateY(-3px); /* Slight lift effect */
 }
