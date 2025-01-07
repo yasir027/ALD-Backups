@@ -1,71 +1,128 @@
-html, body {
-    margin: 0;
-    padding: 0;
-    width: 97vw;  /* Ensures the body takes full width */
-    height: 100vh; /* Ensures the body takes full height, optional based on layout */
-  width:100%;
-    box-sizing: border-box; /* Changes how the width and padding are calculated */
-}
 /* Header.module.css */
 .headerComponent {
   display: flex;
-  flex-direction: row;
-  justify-content: center;
   align-items: center;
-  background-color: #000; /* Background color set to black */
-  padding: 30px 15px; /* Reduced vertical padding */
-  box-shadow: 0 2px 6px rgba(240, 234, 234, 0.1);
+  background-color: #000000;
+  padding: 5px 10px;
   width: 100%;
+  justify-content: space-between;
+  gap: 40px;
+  z-index: 100;
+  min-height: 1vh;
 }
 
-.titlelogo{
-  display:flex;
-  gap: 10px;
-  
+.pfpusername{
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
 }
-/* Reduce the size and margins around elements */
-.logoImage,
-.titleImage {
-   /* Reduced height for image */
-  margin-bottom: 20px; /* Reduced space below the logo */
-  align-self: center; /* Keep the logo centered */
+.displayname{
+  margin-right: 20px;
+  font-size: 1.3rem;
+  white-space: nowrap;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.567);
 }
-.logoImage{
-  height: 60px;
+.titlelogo {
+  display: flex;
+  gap: 15px;
+  align-items: center;
 }
-.titleImage{
+
+.logoImage {
   height: 40px;
 }
-.headerComponentInner {
-  display: flex;
- gap:10px;
-  align-items: center;
-  width: 100%;
-  padding: 0 20px; /* Padding adjusted if necessary */
+
+.titleImage {
+  height: 25px;
 }
 
-.navBarDefault {
-  flex-grow: 1; /* Allow the navbar to take up available space */
+.headerComponentInner {
+  width: 55%;
 }
 
 .loginButton {
-  padding: 7px 20px; /* Slightly reduced padding */
-  background-color: #ffffff; /* Correct the background comment */
-  color: black;
+  padding: 7px 20px;
+  background-color: #fff;
+  color: #000;
   border: none;
   border-radius: 20px;
   font-size: 15px;
-  font-family: 'Abhaya Libre';
-  font-weight:bold;
+  font-family: 'Abhaya Libre', serif;
+  font-weight: bold;
   cursor: pointer;
-  margin-left: 1px; /* Minimal space between navbar and login button */
-  &:hover {
-   color: red /* Underline color */
-  }
-    /* Active state simulates the button being pressed */
-    &:active {
-      transform: scale(0.95); /* Scales down the button to give a "pressed" effect */
-
-  }
-
+  margin-left: 1px;
+  transition: transform 0.2s;
 }
+
+.loginButton:hover {
+  color: red;
+}
+
+.loginButton:active {
+  transform: scale(0.95);
+}
+
+.profilePicture {
+  width: 50px;
+  border-radius: 50%;
+}
+
+
+/* Existing styles... */
+
+/* Add these classes for conditional display */
+.desktopOnly {
+  display: block; /* Default to display on larger screens */
+}
+
+.mobileOnly {
+  display: none; /* Hide by default on smaller screens */
+}
+
+/* Media Query to toggle display based on screen size */
+@media (max-width: 768px) { /* Adjust the breakpoint as needed */
+  .desktopOnly {
+    display: none; /* Hide Navbar on smaller screens */
+  }
+
+  .mobileOnly {
+    display: block; /* Show Ham component on smaller screens */
+  }
+
+  .profilebutton{
+    display: none;
+  }
+
+  .Ham{
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+
+  .headerComponentInner{
+    width: 20%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .headerComponent{
+    width: 100vw;
+    .titlelogo {
+      display: flex;
+      
+      align-items: center;
+    }
+    
+    .logoImage {
+      height: 50px;
+    }
+    
+    .titleImage {
+      display: none;
+    }
+  }
+}
+
+/* Optional: If you want to make the Ham component full width on mobile */
