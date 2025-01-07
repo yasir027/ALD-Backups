@@ -3,234 +3,159 @@
 .container {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  cursor: pointer;
-  border: 1px solid #000000;
-  height: auto;
-  border-bottom: none;
+  background: #f6f6f6;
   border-radius: 20px;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-  width: 190px;
+  box-shadow: 5px 5px 15px #d1d1d1, -5px -5px 15px #ffffff;
+  width: 200px; /* Adjusted to match the sidebar width */
+  margin: 5px;
+  box-shadow: inset 2px 2px 5px #d1d1d1, inset -2px -2px 5px #ffffff;
+  cursor: pointer;
+  justify-content: center;
+}
+
+.container:hover {
+  box-shadow: 2px 2px 15px #d1d1d1, -2px -2px 15px #ffffff;
+  transform: translateY(-3px);
 }
 
 .searchelement,
-.subitem {
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  line-height: 38px;
-  font-weight: 600;
-  color: #B22525;
-  position: relative;
-
-  height: 25px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 10px;
-}
-
+.subitem,
 .item {
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  line-height: 38px;
-  font-weight: 600;
-  color: #B22525;
-  position: relative;
-
-  height: 25px;
-  display: flex;
+  color: #E34A3E;
+  font-size: 14px; /* Slightly smaller font */
+  font-weight: 550;
+  height: 43px; /* Reduced height */
+  width: 100%;
+  display: flex;  
   justify-content: center;
   align-items: center;
-  margin-top: 10px;
-  margin-left: 25px;
-  cursor: pointer;
+  margin-top: 8px; /* Reduced margin */
 }
 
-
-.collapsedRectangle {
-  position: absolute;
-  top: 0;
-  left: 0;
-
-  height: 100%;
-  border: 1px solid #000000;
-  z-index: 2;
-  border-bottom: none;
-  border-radius: 20px;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-  cursor: pointer;
-  /* Change cursor to pointer */
-}
-
+.collapsedRectangle,
 .expandedRectangle {
   position: absolute;
   top: 0;
   left: 0;
-
-  height: 170px;
-  /* Adjusted height for expanded state */
-  border: 1px solid #000000;
-  z-index: -1;
-  border-bottom: none;
-  border-radius: 20px;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-  margin-left: -3px;
-  transition: height 0.3s ease-in-out;
-  /* Add transition for smooth height change */
+  background: #e9e9e9;
+  border-radius: 12px;
+  box-shadow: inset 2px 2px 5px #c1c1c1, inset -2px -2px 5px #ffffff;
   cursor: pointer;
-  /* Change cursor to pointer */
+  transition: height 0.3s ease-in-out, box-shadow 0.2s;
 }
-
-.search,
-.searchInput {
-
-
-  height: 93%;
-  border: 1px solid #000000;
-}
-
 
 .sidebar {
-  background-color: white;
+  background: #e9e9e9;
+  border-radius: 20px;
+  border: 2px solid #e9e9e9;
+  box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.15), -3px -3px 3px rgba(255, 255, 255, 0.6);
+  width: 238px;
+  padding: 12px;
+  margin-left: 10px;
+  margin-top: 0px;
+  transition: all 0.3s ease;
+  height: auto; /* Let content determine height */
+  max-height: 480px; /* Limit overall height */
+  overflow-y: auto; /* Enable vertical scrolling if needed */
+
+  /* Flexbox to distribute space */
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background-color: transparent;
-  width: 200px;
- 
-  padding: 10px 0px 10px 0px;
-  border-radius: 0 20px 20px 0;
-  border-left: none;
-  border-right: 1px solid #e34a3e;
-  border-top: 1px solid #e34a3e;
-  border-bottom: 1px solid #e34a3e;
-  margin-left: 10px;
-  margin-top: 10px;
-
+  justify-content: space-between;
 }
 
-.open {
-  height: 170px;
-  /* Adjusted height for expanded state */
-  border: 1px solid #000000;
-  height: auto;
-  border-bottom: none;
-  border-radius: 20px;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-  margin-left: -3px;
-  transition: height 0.3s ease-in-out;
-  /* Add transition for smooth height change */
-  cursor: pointer;
-  /* Change cursor to pointer */
+/* Scrollbar styling */
+.sidebar::-webkit-scrollbar {
+  width: 7px; /* Set scrollbar width */
+  background-color: transparent; /* Transparent background */
 }
 
-.close {
-  /* Adjusted height for expanded state */
-  border: 1px solid #000000;
-  height: auto;
-  border-bottom: none;
-  border-radius: 20px;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-  margin-left: -3px;
-  transition: height 0.3s ease-in-out;
-  /* Add transition for smooth height change */
-  cursor: pointer;
-  /* Change cursor to pointer */
+.sidebar::-webkit-scrollbar-thumb {
+  background-color: transparent; /* Initially transparent */
+  border-radius: 10px; /* Rounded corners for the thumb */
 }
+
+.sidebar:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(157, 157, 157, 0.5); /* Visible thumb on hover */
+}
+
+
 
 .button {
   display: flex;
-  justify-content: flex-end; /* Align button to the right */
-  margin-top: 10px; /* Add some spacing */
+  justify-content: flex-end;
+  margin-top: 10px;
   margin-bottom: 15px;
 }
 
 .button button {
-  background-color: #000000; /* Black background */
-  color: white;
+  background: #E34A3E; /* Red background */
   border: none;
-  
-  padding: 5px 15px; /* Reduced padding */
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 14px; /* Reduced font size */
-  margin-left: 5px; /* Added margin between buttons */
+  color: #ffffff; /* White font */
+  padding: 5px 15px;
+  font-size: 14px;
+  border-radius: 10px;
+  box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.2), -4px -4px 8px rgba(255, 255, 255, 0.3); /* Neomorphic outer shadow */
   cursor: pointer;
-  border-radius: 6px; /* Slightly less rounded corners */
-  transition: background-color 0.3s, color 0.3s;
+  transition: all 0.3s ease;
+  margin-right: 10px; /* Add space between buttons */
+
 }
 
 .button button:hover {
-  background-color: #E34A3E; /* Red on hover */
+  box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.4), inset -4px -4px 8px rgba(255, 255, 255, 0.4); /* Inset shadows on hover */
+  transform: translateY(-3px); /* Slight lift effect */
 }
 
 .clearButton {
-  background-color: #f8f9fa; /* Light gray */
-  border: 1px solid #adb5bd; /* Gray border */
-  color: #495057; /* Dark gray text */
-  padding: 8px; /* Reduced padding */
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 14px; /* Reduced font size */
-  margin-left: 5px; /* Added margin between buttons */
+  background: #E34A3E; /* Red background */
+  border: none;
+  color: #ffffff; /* White font */
+  padding: 5px 15px;
+  font-size: 14px;
+  border-radius: 10px;
+  box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.2), -4px -4px 8px rgba(255, 255, 255, 0.3); /* Neomorphic outer shadow */
   cursor: pointer;
-  border-radius: 6px; /* Slightly less rounded corners */
-  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+  transition: all 0.3s ease;
 }
 
 .clearButton:hover {
-  background-color: #e9ecef; /* Lighter gray on hover */
-  border-color: #868e96; /* Darker gray border on hover */
+  box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.4), inset -4px -4px 8px rgba(255, 255, 255, 0.4); /* Inset shadows on hover */
+  transform: translateY(-3px); /* Slight lift effect */
 }
 
-.caseNoList{
+
+
+.caseNoList {
   max-height: 250px;
   width: 185px;
-  overflow-y: scroll;
-  .caseNoItem{
-    padding: 10px;
-    border-top: 1px solid grey;
-    border-bottom: 1px solid grey;
-   
-  }
-  .caseNoItem:hover{
-    background-color: #495057;
-    color: white;
-  }
-
-
-  &::-webkit-scrollbar {
-    width: 7px;
-    background-color: transparent; /* Makes scrollbar background transparent */
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: inset 5px 5px 10px #d1d1d1, inset -5px -5px 10px #ffffff;
 }
 
-&::-webkit-scrollbar-thumb {
-    background-color: transparent; /* Initially make thumb transparent */
-    border-radius: 10px; /* Rounded corners for the thumb */
+.caseNoItem {
+  padding: 10px;
+  font-size: 14px;
+  background: #ffffff;
+  box-shadow: inset 2px 2px 5px #d1d1d1, inset -2px -2px 5px #ffffff;
+  transition: background 0.2s ease, color 0.2s ease;
+  color: #333;
+}
+.caseNoItem:hover {
+  background: #333;
+  color: #ffffff;
 }
 
-&:hover::-webkit-scrollbar-thumb {
-    background-color: rgba(145, 145, 145, 0.5); /* Visible on hover with transparency */
-}    &::-webkit-scrollbar {
-  width: 7px;
-  background-color: transparent; /* Makes scrollbar background transparent */
+.caseNoList::-webkit-scrollbar {
+  width: 5px;
+  background: #ffffff;
 }
 
-&::-webkit-scrollbar-thumb {
-  background-color: transparent; /* Initially make thumb transparent */
-  border-radius: 10px; /* Rounded corners for the thumb */
-}
-
-&:hover::-webkit-scrollbar-thumb {
-  background-color: rgba(145, 145, 145, 0.5); /* Visible on hover with transparency */
-}
+.caseNoList::-webkit-scrollbar-thumb {
+  background-color: rgba(51, 51, 51, 0.3);
+  border-radius: 10px;
 }
