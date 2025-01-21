@@ -5,11 +5,9 @@ import Razorpay from 'razorpay'; // Import Razorpay SDK
 import { db } from '../../services/firebaseConfig';
 import { doc, setDoc } from 'firebase/firestore';
 import { useAuth } from '../../services/AuthContext'; 
-import LoginPageImage from '../../assets/LoginPage.png';
-import { createOrder, initiatePayment } from '../../services/razorpay'; // Update path as needed
-import { getFirestore, getDoc } from 'firebase/firestore'; // Import Firebase Firestore
-
-
+import LoginPageImage from '../../assets/bookcase.jpg';
+import { getFirestore, getDoc, updateDoc } from 'firebase/firestore'; // Import Firebase Firestore
+import CustomPopup from './PaymentPopup';
 
 const stateCityDistrictMap = {
   "Andhra Pradesh": {
@@ -132,10 +130,13 @@ const BillingForm = () => {
   const location = useLocation();
   const subscriptionId = location.state?.subscriptionId || '';
   const [price, setPrice] = useState(0);
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [subscription, setSubscription] = useState({
+    planName: '',
+    duration: '',
+    price: 0,
+  });
   const [loading, setLoading] = useState(true);
-
-
-
   const [billingData, setBillingData] = useState({
     firstName: '',
     lastName: '',
@@ -147,10 +148,10 @@ const BillingForm = () => {
     city: '',  // New city
     district: '', // New district
     pincode: '',
-    paymentMethod: 'online',
+    paymentMethod: '',
     representative: null,
     payment: 'pending',
-    subscriptionId: subscriptionId || '',
+    subscriptionId: subscriptionId,
   });
 
   const [cities, setCities] = useState([]);
@@ -174,29 +175,6 @@ const BillingForm = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!user || !billingData.subscriptionId) {
-      alert('User must be logged in and subscription ID is required.');
-      return;
-    }
-
-    const finalBillingData = {
-      ...billingData,
-      uid: user.uid,
-      creationDate: new Date().toISOString(),
-    };
-
-    try {
-      await setDoc(doc(db, 'billing', user.uid), finalBillingData);
-      alert('Billing information saved successfully!');
-    } catch (error) {
-      console.error('Error saving billing info:', error);
-      alert('Failed to save billing information. Please try again.');
-    }
-  };
-
   const handleStateChange = (e) => {
     const selectedState = e.target.value;
     setBillingData((prev) => ({ ...prev, state: selectedState, city: '', district: '' }));
@@ -214,139 +192,206 @@ const BillingForm = () => {
 // Fetch subscription price from Firestore
 useEffect(() => {
   const fetchPrice = async () => {
-      if (!subscriptionId) {
-          setLoading(false);
-          return;
-      }
+    if (!subscriptionId) {
+      setLoading(false);
+      return;
+    }
 
-      try {
-          const db = getFirestore(); // Initialize Firestore
-          const subscriptionRef = doc(db, 'subscriptions', subscriptionId); // Reference to subscription document
-          const subscriptionSnap = await getDoc(subscriptionRef);
+    try {
+      const db = getFirestore();
+      const subscriptionRef = doc(db, 'subscriptions', subscriptionId);
+      const subscriptionSnap = await getDoc(subscriptionRef);
 
-          if (subscriptionSnap.exists()) {
-              const data = subscriptionSnap.data();
-              setPrice(data.price); // Set the price from Firestore
-          } else {
-              console.error('No such subscription!');
-              setPrice(0);
-          }
-      } catch (error) {
-          console.error('Error fetching subscription price:', error);
-          setPrice(0);
-      } finally {
-          setLoading(false);
+      if (subscriptionSnap.exists()) {
+        const data = subscriptionSnap.data();
+        setSubscription({
+          planName: data.planName,
+          duration: data.duration,
+          price: data.price,
+        });
+        setPrice(data.price);
+
+        // Update billingData with subscriptionId
+        setBillingData((prev) => ({
+          ...prev,
+          subscriptionId: subscriptionId,
+        }));
+      } else {
+        console.error('No such subscription!');
+        setSubscription({
+          planName: '',
+          duration: '',
+          price: 0,
+        });
+        setPrice(0);
       }
+    } catch (error) {
+      console.error('Error fetching subscription details:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  fetchPrice();
+  fetchPrice(); // Corrected function call
 }, [subscriptionId]);
 
 
 
 
-const handlePayment = async () => {
+const handleCheckout = async (e) => {
+  e.preventDefault();
+
+
   if (price <= 0) {
-      alert('Invalid subscription or price not available.');
-      return;
+    alert('Invalid subscription or price not available.');
+    return;
   }
+
+  // Validate required fields in billingData
+  const requiredFields = [
+    'firstName',
+    'lastName',
+    'phone',
+    'email',
+    'fullAddress',
+    'state',
+    'city',
+    'district',
+    'pincode',
+    'paymentMethod',
+  ];
+
+  for (let field of requiredFields) {
+    if (!billingData[field]) {
+      alert(`Please fill in the ${field}.`);
+      return;
+    }
+  }
+
+  const { paymentMethod } = billingData;
+
+  // Prepare final billing data
+  const finalBillingData = {
+    ...billingData,
+    uid: user.uid,
+    creationDate: new Date().toISOString(),
+  };
 
   try {
-      // Step 1: Call backend to create an order
-      const response = await fetch('http://localhost:3000/api/payment/create-order', {
-          method: 'POST',
-          headers: {
-              'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-              amount: price * 100, // Convert to paisa
-              currency: 'INR',
-              receipt: `receipt_${subscriptionId}`,
-          }),
-      });
+    // Save billing information to Firestore only if all fields are filled
+    await setDoc(doc(db, 'billing', user.uid), finalBillingData);
+    console.log('Billing information saved successfully.');
 
-      if (!response.ok) {
-          console.error('Failed to create order:', response.status, response.statusText);
-          alert('Failed to create Razorpay order. Please try again.');
-          return;
-      }
-
-      const data = await response.json();
-
-      if (!data || !data.success || !data.orderId) {
-          console.error('Invalid response from order creation:', data);
-          alert('Failed to create Razorpay order. Please try again.');
-          return;
-      }
-
-      // Step 2: Open Razorpay payment interface
-      const options = {
-          key: 'rzp_test_1wSYUGMK0YWQFf', // Replace with your Razorpay Key ID
-          amount: price * 100, // Amount in paisa
-          currency: 'INR',
-          name: 'ALD Online',
-          description: `Subscription: ${subscriptionId}`,
-          order_id: data.orderId, // Order ID from backend
-          handler: async (response) => {
-              try {
-                  // Step 3: Verify the payment
-                  const verifyResponse = await fetch('http://localhost:3000/api/payment/verify-payment', {
-                      method: 'POST',
-                      headers: {
-                          'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify({
-                          razorpay_order_id: response.razorpay_order_id,
-                          razorpay_payment_id: response.razorpay_payment_id,
-                          razorpay_signature: response.razorpay_signature,
-                      }),
-                  });
-
-                  if (!verifyResponse.ok) {
-                      console.error('Payment verification failed:', verifyResponse.status, verifyResponse.statusText);
-                      alert('Payment verification failed. Please contact support.');
-                      return;
-                  }
-
-                  const verifyData = await verifyResponse.json();
-
-                  if (verifyData.success) {
-                      alert('Payment successful!');
-                      // TODO: Handle successful payment (e.g., update subscription status)
-                  } else {
-                      console.error('Payment verification response:', verifyData);
-                      alert('Payment verification failed.');
-                  }
-              } catch (verifyError) {
-                  console.error('Error verifying payment:', verifyError);
-                  alert('An error occurred during payment verification. Please try again.');
-              }
-          },
-          prefill: {
-              name: 'Your Name', // Replace with actual customer name
-              email: 'your.email@example.com', // Replace with actual customer email
-              contact: '9999999999', // Replace with actual customer contact number
-          },
-          theme: {
-              color: '#3399cc', // Customize Razorpay UI color
-          },
-      };
-
-      const razorpay = new window.Razorpay(options);
-      razorpay.open();
+    if (paymentMethod === 'cash') {
+      // Show popup for cash payment
+      setIsPopupOpen(true);
+      return;
+    } else if (paymentMethod === 'online') {
+      // Trigger Razorpay checkout
+      proceedToRazorpayCheckout();
+    } else {
+      alert('Invalid payment method selected.');
+    }
   } catch (error) {
-      console.error('Error during payment:', error);
-      alert('An error occurred while processing the payment. Please try again.');
+    console.error('Error during checkout process:', error);
+    alert('An error occurred while processing your checkout. Please try again.');
   }
 };
+
+// Function to proceed with Razorpay
+const proceedToRazorpayCheckout = async () => {
+  try {
+    // Update the paymentMethod to 'online' in Firestore
+    const billingDocRef = doc(db, 'billing', user.uid);
+    await updateDoc(billingDocRef, {
+      paymentMethod: 'online', // Set payment method to online
+    });
+
+    // Proceed to Razorpay checkout
+    const response = await fetch('http://localhost:3000/api/payment/create-order', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        amount: price,
+        currency: 'INR',
+        receipt: `receipt_${billingData.subscriptionId}`,
+      }),
+    });
+
+    const data = await response.json();
+
+    const options = {
+      key: 'rzp_live_qMTTMOsAEnmxqj', // Your Razorpay API key
+      amount: price * 100, // Amount in paise (multiply by 100 to convert to INR)
+      currency: 'INR',
+      name: `${billingData.firstName} ${billingData.lastName}`,
+      description: `Billing for: ${billingData.fullAddress}`,
+      order_id: billingData.orderId, // Optional order ID
+      handler: async (response) => {
+        try {
+          console.log('Payment response:', response);
+      
+          const paymentStatus = 'Successful'; // Mark payment as received
+      
+          // Update payment status in 'billing' collection
+          await updateDoc(billingDocRef, {
+            payment: paymentStatus,
+          });
+      
+          // Update subscription status in the 'subscriptions' collection
+          const subscriptionDocRef = doc(db, 'subscriptions', billingData.subscriptionId);
+          await updateDoc(subscriptionDocRef, {
+            subscriptionStatus: 'active', // Set subscriptionStatus to active
+          });
+      
+          // Optionally, update the subscriptionStatus in the 'users' collection
+          const subscriptionDocSnap = await getDoc(subscriptionDocRef);
+          if (subscriptionDocSnap.exists()) {
+            const subscriptionData = subscriptionDocSnap.data();
+      
+            // Get the user UID from the subscription data
+            const userUid = subscriptionData.uid;
+      
+            const userDocRef = doc(db, 'users', userUid);
+            await updateDoc(userDocRef, {
+              subscriptionStatus: 'active', // Set subscriptionStatus in the user's document
+            });
+          } else {
+            console.error('No subscription document found for ID:', billingData.subscriptionId);
+          }
+         navigate('/');
+          
+        } catch (error) {
+          console.error('Error updating Firestore:', error);
+          alert('An error occurred while updating Firestore.');
+        }
+      },
+      modal: {
+        ondismiss: () => {
+          console.log('Payment process was cancelled by the user');
+        },
+      },
+    };
+
+    const razorpay = new window.Razorpay(options);
+    razorpay.open();
+  } catch (error) {
+    console.error('Razorpay error:', error);
+    alert('Payment failed. Please try again.');
+  }
+};
+
+
 
 if (loading) {
   return <div>Loading subscription details...</div>;
 }
 
 
-
   return (
+    
     <div 
       className={styles.billingContainer}
       style={{
@@ -359,14 +404,19 @@ if (loading) {
         alignItems: 'center',
       }}
     >
+      <CustomPopup 
+  isOpen={isPopupOpen} 
+  onClose={() => setIsPopupOpen(false)} 
+  onContinue={proceedToRazorpayCheckout} 
+/>
       <div className={styles.billingForm}>
         <h2 className={styles.title}>Billing Address</h2>
-        <form onSubmit={handleSubmit}>
+        <form>
           <div className={styles.inputContainer}>
             <input
               type="text"
               name="firstName"
-              className={styles.inputField}
+              className={styles.BillingInputField}
               placeholder="First Name"
               value={billingData.firstName}
               onChange={handleInputChange}
@@ -375,7 +425,7 @@ if (loading) {
             <input
               type="text"
               name="lastName"
-              className={styles.inputField}
+              className={styles.BillingInputField}
               placeholder="Last Name"
               value={billingData.lastName}
               onChange={handleInputChange}
@@ -387,7 +437,7 @@ if (loading) {
             <input
               type="text"
               name="phone"
-              className={styles.inputField}
+              className={styles.BillingInputField}
               placeholder="Phone"
               value={billingData.phone}
               onChange={handleInputChange}
@@ -396,7 +446,7 @@ if (loading) {
             <input
               type="text"
               name="alternatePhone"
-              className={styles.inputField}
+              className={styles.BillingInputField}
               placeholder="Alternate Phone"
               value={billingData.alternatePhone}
               onChange={handleInputChange}
@@ -407,7 +457,7 @@ if (loading) {
             <input
               type="email"
               name="email"
-              className={styles.inputField}
+              className={styles.BillingInputField}
               placeholder="Email"
               value={billingData.email}
               onChange={handleInputChange}
@@ -419,7 +469,7 @@ if (loading) {
             <input
               type="text"
               name="fullAddress"
-              className={styles.inputField}
+              className={styles.BillingInputField}
               placeholder="Full Address"
               value={billingData.fullAddress}
               onChange={handleInputChange}
@@ -428,47 +478,59 @@ if (loading) {
           </div>
 
           <div className={styles.inputContainer}>
-          <select name="state" value={billingData.state} onChange={handleStateChange} required className={styles.inputField}>
-  <option value="">Select State</option>
-  {Object.keys(stateCityDistrictMap).map((state) => (
-    <option key={state} value={state}>
-      {state}
-    </option>
-  ))}
-</select>
+          <select name="state" value={billingData.state} onChange={handleStateChange} required className={styles.BillingInputField}>
+            <option value="">Select State</option>
+            {Object.keys(stateCityDistrictMap).map((state) => (
+              <option key={state} value={state}>
+                {state}
+              </option>
+            ))}
+          </select>
 
-<select name="city" value={billingData.city} onChange={handleChange} required className={styles.inputField}>
-  <option value="">Select City</option>
-  {cities.map((city) => (
-    <option key={city} value={city}>
-      {city}
-    </option>
-  ))}
-</select>
+            <select name="city" value={billingData.city} onChange={handleChange} required className={styles.BillingInputField}>
+              <option value="">Select City</option>
+              {cities.map((city) => (
+                <option key={city} value={city}>
+                  {city}
+                </option>
+              ))}
+            </select>
 
-<select name="district" value={billingData.district} onChange={handleChange} required className={styles.inputField}>
-  <option value="">Select District</option>
-  {districts.map((district) => (
-    <option key={district} value={district}>
-      {district}
-    </option>
-  ))}
-</select>
-
-          </div>
-
+          <select name="district" value={billingData.district} onChange={handleChange} required className={styles.BillingInputField}>
+            <option value="">Select District</option>
+            {districts.map((district) => (
+              <option key={district} value={district}>
+                {district}
+              </option>
+            ))}
+          </select>
+        </div>
           <div className={styles.inputContainer}>
             <input
               type="text"
               name="pincode"
-              className={styles.inputField}
+              className={styles.BillingInputField}
               placeholder="Pincode"
               value={billingData.pincode}
               onChange={handleInputChange}
               required
             />
           </div>
-
+            {/* Plan Details Box */}
+                    <div className={styles.subscriptionContainer}>
+          <div className={styles.subscriptionTile}>
+            <h3>Selected Plan Details</h3>
+            <p>
+              <strong>Plan:</strong> <span className={styles.highlight}>{subscription.planName || 'Not Selected'}</span>
+            </p>
+            <p>
+              <strong>Duration:</strong> <span className={styles.highlight}>{subscription.duration || 'Not Selected'} Days</span>
+            </p>
+            <p>
+              <strong>Price:</strong> <span className={styles.highlight}>₹{subscription.price || '0'}</span>
+            </p>
+          </div>
+        </div>
           <h3>Select Payment Method</h3>
           <div className={styles.paymentOptions}>
             <label>
@@ -491,26 +553,9 @@ if (loading) {
               />
               Online
             </label>
-            <button
-              onClick={handlePayment}
-              style={{
-                  padding: '10px 20px',
-                  fontSize: '16px',
-                  backgroundColor: '#3399cc',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '5px',
-                  cursor: 'pointer',
-              }}
-            >
-                        Pay ₹{price}
-                    </button>
           </div>
+          <button onClick={handleCheckout} className={styles.submitButton} >Proceed to Checkout</button>
 
-          <button type="submit" className={styles.submitButton}>
-            Submit Billing Info
-          </button>
-          
         </form>
       </div>
     </div>
